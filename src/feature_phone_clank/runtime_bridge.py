@@ -33,6 +33,22 @@ def _release_channel() -> str:
     return os.environ.get("FEATURE_PHONE_CLANK_RELEASE_CHANNEL", "experimental")
 
 
+def _source_revision() -> str:
+    """Full Git SHA the running image was built from, baked in at build time.
+
+    Set via the Dockerfile's `GIT_REVISION` build arg ->
+    `FEATURE_PHONE_CLANK_SOURCE_REVISION` env var, never read from a `.git`
+    directory at runtime. Local/non-Docker runs report "unknown" rather than
+    a fabricated value. Pattern proven on OEM Radar / Chinese Tech Wire.
+    """
+    return os.environ.get("FEATURE_PHONE_CLANK_SOURCE_REVISION", "unknown")
+
+
+def _source_revision_short() -> str:
+    revision = _source_revision()
+    return revision if revision == "unknown" else revision[:12]
+
+
 try:
     from clank_runtime.contracts.enums import (
         IngestionState,
@@ -73,6 +89,8 @@ def get_version_info() -> dict[str, str]:
         "health_contract_version": HEALTH_CONTRACT_VERSION,
         "release_channel": _release_channel(),
         "runtime_bridge": "stage1",
+        "source_revision": _source_revision(),
+        "source_revision_short": _source_revision_short(),
     }
 
 
@@ -95,6 +113,8 @@ def get_identity() -> Any:
         "clank_id": CLANK_ID,
         "clank_version": PACKAGE_VERSION,
         "release_channel": channel,
+        "source_revision": _source_revision(),
+        "source_revision_short": _source_revision_short(),
     }
 
 

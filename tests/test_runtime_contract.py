@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from feature_phone_clank import runtime_bridge
 
 
@@ -83,3 +85,42 @@ def test_cli_version_identity_health_are_valid_json(tmp_path):
         assert proc.returncode in (0, 1), f"{cmd} stderr: {proc.stderr}"
         data = json.loads(proc.stdout)
         assert isinstance(data, dict)
+
+
+# --- Git-revision provenance (mirrors OEM Radar / Chinese Tech Wire) -------
+
+
+@pytest.fixture(autouse=True)
+def _clean_revision_env(monkeypatch: "pytest.MonkeyPatch") -> None:
+    monkeypatch.delenv("FEATURE_PHONE_CLANK_SOURCE_REVISION", raising=False)
+
+
+def test_source_revision_defaults_to_unknown_without_env_var():
+    assert runtime_bridge._source_revision() == "unknown"
+    assert runtime_bridge._source_revision_short() == "unknown"
+
+
+def test_source_revision_reflects_full_sha_from_env(monkeypatch):
+    full_sha = "f8fdab41c5ba56ec117c5ceaebdc8344ec6b1a61"
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_SOURCE_REVISION", full_sha)
+    assert runtime_bridge._source_revision() == full_sha
+    assert runtime_bridge._source_revision_short() == full_sha[:12]
+
+
+def test_get_version_info_includes_source_revision(monkeypatch):
+    full_sha = "f8fdab41c5ba56ec117c5ceaebdc8344ec6b1a61"
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_SOURCE_REVISION", full_sha)
+    info = runtime_bridge.get_version_info()
+    assert info["source_revision"] == full_sha
+    assert info["source_revision_short"] == full_sha[:12]
+
+
+def test_get_identity_includes_source_revision_when_runtime_unavailable(monkeypatch):
+    full_sha = "f8fdab41c5ba56ec117c5ceaebdc8344ec6b1a61"
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_SOURCE_REVISION", full_sha)
+    if runtime_bridge._HAS_RUNTIME:
+        pytest.skip("clank_runtime installed: identity uses the RuntimeIdentity "
+                    "pydantic model, which forbids extra fields")
+    identity = runtime_bridge.get_identity()
+    assert identity["source_revision"] == full_sha
+    assert identity["source_revision_short"] == full_sha[:12]
