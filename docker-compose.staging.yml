@@ -1,0 +1,31 @@
+# Feature Phone Clank — STAGING / SOAK ONLY. Experimental, actively
+# developing. No production compose file exists for this clank. Distinct
+# volume, no ports published, no Docker socket mounted, restart disabled
+# (soak runs are launched explicitly), one-shot default command.
+services:
+  feature-phone-clank:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_REVISION: ${GIT_REVISION:-unknown}
+    image: feature-phone-clank:${IMAGE_TAG:-soak-local}
+    container_name: feature-phone-clank-soak
+    restart: "no"
+    environment:
+      FEATURE_PHONE_CLANK_RELEASE_CHANNEL: experimental
+    volumes:
+      - feature_phone_clank_data:/app/data
+    working_dir: /app
+    command: ["run", "--db", "/app/data/feature_phone_clank.db",
+              "--lock-path", "/app/data/feature-phone-clank.lock"]
+    healthcheck:
+      test: ["CMD", "feature-phone-clank", "health", "--db", "/app/data/feature_phone_clank.db"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  feature_phone_clank_data:
+    name: feature_phone_clank_staging_data
