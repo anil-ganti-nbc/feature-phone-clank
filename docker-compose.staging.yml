@@ -17,10 +17,16 @@ services:
     volumes:
       - feature_phone_clank_data:/app/data
     working_dir: /app
-    command: ["run", "--db", "/app/data/feature_phone_clank.db",
-              "--lock-path", "/app/data/feature-phone-clank.lock"]
+    # DEFAULT_DB_PATH ("data/feature_phone_clank.db") and the default
+    # --lock-path ("data/feature-phone-clank.lock") already resolve under
+    # WORKDIR /app, which is exactly where the named volume is mounted --
+    # no explicit overrides needed. --db/--scope are top-level parser args
+    # in cli.py (added before add_subparsers), NOT subcommand args, so they
+    # must come before the subcommand if ever overridden:
+    # `feature-phone-clank --db PATH run`, never `run --db PATH`.
+    command: ["run"]
     healthcheck:
-      test: ["CMD", "feature-phone-clank", "health", "--db", "/app/data/feature_phone_clank.db"]
+      test: ["CMD", "feature-phone-clank", "health"]
       interval: 60s
       timeout: 15s
       retries: 3
