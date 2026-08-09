@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"C:\\\\Users\\\\anil\\\\Desktop\" 2>&1 | head -50)"
+    ]
+  }
+}

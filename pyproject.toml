@@ -1,0 +1,30 @@
+[project]
+name = "feature-phone-clank"
+version = "0.0.1"
+description = "Change-detection intelligence for official feature-phone sources (FEATURE-01)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5",
+    "PyYAML>=6.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+feature-phone-clank = "feature_phone_clank.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"feature_phone_clank.providers.sqlite" = ["schema.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

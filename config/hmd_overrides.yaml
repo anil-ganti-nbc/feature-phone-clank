@@ -1,0 +1,26 @@
+# Human-curated overrides for the HMD/Nokia collector (source_key
+# "hmd-nokia"). Applied AFTER automatic classification — see
+# src/feature_phone_clank/collectors/hmd.py module docstring for the
+# primary (allowlist-free) discovery/classification mechanism. This file
+# exists only for specific, already-reviewed edge cases the deterministic
+# rules get wrong; it is not how new phones get discovered.
+#
+# force_feature_phone: URLs the automatic classifier quarantined as
+#   ambiguous, reviewed by a human, and confirmed to be feature phones.
+# force_smartphone: same, confirmed to be smartphones (must be rejected).
+# force_exclude: URLs that matched the phone-shaped slug pattern but are
+#   not phones at all (e.g. an accessory with a phone-like name).
+
+force_feature_phone:
+  # hmd-terra-m: appears on BOTH the official /feature-phones and
+  # /smartphones catalogue listing pages (likely a cross-sell placement on
+  # the smartphones page), so the automatic classifier's primary signal
+  # (listing membership) is contradictory and quarantines it by design.
+  # Reviewed 2026-08-09: the product's own page title is "HMD Terra M | A
+  # durable feature phone for tough conditions" — HMD's own copy states
+  # unambiguously what category this device is. Confirmed feature phone.
+  - hmd-terra-m
+
+force_smartphone: []
+
+force_exclude: []

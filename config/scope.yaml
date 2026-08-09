@@ -1,0 +1,14 @@
+# Production-scope allowlist (see core/scope.py).
+#
+# A collector's source_key must appear here before its results are allowed
+# to persist into the production database. Adding an entry here is a
+# deliberate editorial decision, not something a collector can do to itself.
+#
+# hmd-nokia promoted 2026-08-09 after Stage 2.1 hardening: all 8 promotion
+# criteria met (see Stage 2.1 report) — confidently-classified feature
+# phones persist even with incomplete specs, canonical names are clean
+# (including the Nokia 5310/230 H1 bug and the hmd-terra-m nav-link name
+# both fixed), zero smartphones or ambiguous items reach the catalogue,
+# full test suite green, run lock + catastrophic-zero guard verified.
+production_collectors:
+  - hmd-nokia
