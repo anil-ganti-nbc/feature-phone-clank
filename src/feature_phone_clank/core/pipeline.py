@@ -161,14 +161,23 @@ def process_run(
         # Identity anomaly: same canonical URL, different non-empty SKU.
         # Never silently overwritten — products.model_number simply isn't
         # touched again after creation (see create_product); this only
-        # raises the anomaly for review.
+        # raises the anomaly for review. `existing["model_number"]` is
+        # always the ORIGINAL creation-time value, so a product whose SKU
+        # changed once and then stayed at the new value would otherwise
+        # keep comparing unequal on every subsequent run. Gating event
+        # creation on `is_new_obs` (the same guard every other branch in
+        # this function already uses) is what actually makes this a
+        # one-time signal: a rerun that observes the identical
+        # already-recorded state is not new information, so it must not
+        # mint a second event/notification for the same real-world change
+        # (notification-eligibility review, Stage 4).
         if existing["model_number"] and d.model_number and existing["model_number"] != d.model_number:
             prior_latest = store.latest_observation(product_id)
             store.touch_product(product_id, d.url)
-            obs_id, _ = store.record_observation_get_id(product_id, d)
+            obs_id, is_new_obs = store.record_observation_get_id(product_id, d)
             stats["updated_products"] += 1
             stats["identity_anomalies"] += 1
-            if not is_baseline:
+            if not is_baseline and is_new_obs:
                 event = _build_event(
                     d=d, product_row=None, event_type=ChangeType.IDENTITY_ANOMALY,
                     previous_observation_id=prior_latest["id"] if prior_latest else None,

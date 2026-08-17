@@ -144,6 +144,39 @@ The canonical suite at the start of this phase passed 90 tests, 1 skipped;
 this phase added 21 new tests (15 notification-behavior + 6 acceptance-drill
 scenarios), all against a scratch/tmp-path database — 111 passed, 1 skipped.
 
+## Pre-merge notification-semantics review
+
+A focused review before merge (not a new stage) enumerated every emittable
+event type against Discord eligibility and found one real bug: `IDENTITY_ANOMALY`
+compares each run's SKU against `products.model_number`, which is set once at
+creation and never updated — so a product whose SKU changed once and then
+stayed at the new value kept comparing unequal on every later run, producing
+a second, spurious identity_anomaly event/notification for the *same* real
+change (verified: exactly 2 Discord messages for 1 real-world flip). Fixed by
+gating event creation on `is_new_obs`, the same guard every other branch in
+`process_run` already used (`core/pipeline.py`) — a one-line, notification-
+duplicate-scoped correction, not a redesign of identity-anomaly detection.
+Regression test: `tests/test_pipeline.py::test_sku_mismatch_does_not_reraise_on_unchanged_rerun`.
+Reviewed and confirmed clean (no changes needed): `FIELD_CHANGED` field
+allowlist (no noisy/internal fields reachable — `diff_meaningful_fields`
+already filters to `MEANINGFUL_FIELDS` before an event can exist at all),
+`PRODUCT_REMOVED` safety (a transient per-product fetch failure degrades to
+an `incomplete` observation, never an absence — `_parse_product` never
+raises; a hard collector exception fails the whole run before `process_run`
+is ever called), `SPECS_BECAME_AVAILABLE`/`UNAVAILABLE` asymmetry (available
+= genuine information gain; unavailable = LOW/MEDIUM, more likely a page
+hiccup than real removal), and `CLASSIFICATION_CHANGED` suppression (driven
+by static listing membership or an explicit operator override, not
+transient network state). Isolated replay through a local echo webhook
+(never a real Discord endpoint): 9 real events, 7 Discord-eligible, 2
+suppressed, exactly 7 messages received, 0 duplicates — ground truth from
+the echo server matched the outbox's own bookkeeping exactly. Retry/dedupe
+proof: `requeue_failed_notifications` only ever touches `status='failed'`
+rows and `drain()` only ever selects `status='pending'` rows, so an
+already-`sent` row is structurally unreachable by either path — verified
+directly (a `sent` row survives a `requeue_failed` call untouched, and the
+sender is never invoked again on the following `drain()`).
+
 ## Stage 4 (this phase)
 
 Operator CLI + durable Discord notification outbox. No runtime deployment,
