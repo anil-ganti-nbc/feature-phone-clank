@@ -17,6 +17,15 @@ def test_dashboard_first_render_succeeds_for_fresh_isolated_state(monkeypatch, t
     assert "local development build" in page
 
 
+def test_dashboard_exposes_hmd_collection_only_in_field_test(monkeypatch, tmp_path):
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_DATA_DIR", str(tmp_path / "field-test"))
+    database = resolve_data_path("data/feature_phone_clank.db")
+    page = render(database, controller=object())
+    assert "Collect HMD/Nokia now" in page
+    assert "/api/local-collection/run" in page
+    assert "External delivery is disabled" in page
+
+
 def test_dashboard_http_root_dispatches_from_isolated_state(monkeypatch, tmp_path):
     monkeypatch.setenv("FEATURE_PHONE_CLANK_DATA_DIR", str(tmp_path / "field-test"))
     server = serve(port=0)
