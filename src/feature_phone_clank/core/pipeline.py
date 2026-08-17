@@ -11,9 +11,19 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Callable
 
 from .diff import MEANINGFUL_FIELDS, diff_meaningful_fields, severity_for_changes
 from .models import AlertLevel, ChangeType, Confidence, Discovery, Event, FieldChange
+
+# Optional extension point (Stage 4): called with (event, event_id) right
+# after an event is newly persisted. Event detection itself never depends
+# on this running, succeeding, or being provided at all — `process_run`
+# still returns identical `stats` with or without one (brief section 4:
+# "Event detection must remain independent from Discord"). Whatever this
+# callback does (e.g. DiscordNotifier.enqueue) is wired in by core/runner.py,
+# never imported here.
+NotifyFn = Callable[[Event, int], None]
 
 log = logging.getLogger("feature_phone_clank.pipeline")
 
@@ -76,9 +86,23 @@ def _build_event(
     )
 
 
+def _record_and_notify(store, event: Event, notify: NotifyFn | None, stats: dict) -> None:
+    """Persist `event` (idempotent by dedup_key) and, only for a genuinely
+    NEW row, invoke `notify`. A re-derived duplicate of an already-persisted
+    event must never re-trigger notification — `store.record_event`
+    returning None (dedup hit) is exactly how that's already guaranteed."""
+    event_id = store.record_event(event)
+    if event_id is None:
+        return
+    stats["events_created"] += 1
+    if notify is not None:
+        notify(event, event_id)
+
+
 def process_run(
     store, source_key: str, source_id: int, discoveries: list[Discovery],
     classification_transitions: list[ClassificationTransition], is_baseline: bool,
+    notify: NotifyFn | None = None,
 ) -> dict:
     """The Stage 3 replacement for the old `store.ingest()` call in
     runner.py. Only ever invoked for a run whose overall status is 'ok'
@@ -128,8 +152,7 @@ def process_run(
                     changed_fields=[], alert_level=AlertLevel.HIGH, confidence=Confidence.HIGH,
                     meta=meta,
                 )
-                if store.record_event(event) is not None:
-                    stats["events_created"] += 1
+                _record_and_notify(store, event, notify, stats)
             continue
 
         product_id = existing["id"]
@@ -157,8 +180,7 @@ def process_run(
                     alert_level=AlertLevel.HIGH, confidence=Confidence.HIGH,
                     meta={"reason": "canonical URL now reports a different SKU/model number"},
                 )
-                if store.record_event(event) is not None:
-                    stats["events_created"] += 1
+                _record_and_notify(store, event, notify, stats)
             continue
 
         prev_obs = store.latest_observation(product_id)
@@ -205,8 +227,7 @@ def process_run(
         # both incomplete: nothing usable to diff, no event.
 
         if event is not None and not is_baseline:
-            if store.record_event(event) is not None:
-                stats["events_created"] += 1
+            _record_and_notify(store, event, notify, stats)
 
     # Classification demotions on EXISTING products (brief section 11):
     # feature_phone -> anything else, for a product that's already in the
@@ -226,8 +247,7 @@ def process_run(
                 alert_level=AlertLevel.LOW, confidence=Confidence.MEDIUM,
                 meta={"reason": "re-classification evidence changed for an already-catalogued product"},
             )
-            if store.record_event(event) is not None:
-                stats["events_created"] += 1
+            _record_and_notify(store, event, notify, stats)
 
     # Removal confirmation (brief section 9). Only advances on a healthy
     # ('ok') run, and only after a source baseline already exists — a
@@ -249,7 +269,6 @@ def process_run(
                     meta={"consecutive_absences": absences,
                           "threshold": REMOVAL_CONFIRMATION_THRESHOLD},
                 )
-                if store.record_event(event) is not None:
-                    stats["events_created"] += 1
+                _record_and_notify(store, event, notify, stats)
 
     return stats

@@ -15,14 +15,59 @@ events.
 feature-phone-clank version
 feature-phone-clank identity
 feature-phone-clank health
-feature-phone-clank run
+feature-phone-clank run                # collects, then attempts delivery of pending notifications
 feature-phone-clank status
 feature-phone-clank events
-feature-phone-clank report
+feature-phone-clank report             # health + events + notifications + provenance, one JSON doc
+feature-phone-clank deliver            # (re)attempt delivery of pending notifications standalone
+feature-phone-clank notifications      # outbox counts, or --status pending|sent|failed|suppressed
+feature-phone-clank test-notify        # send a marked FEATURE-01 TEST notification
 ```
 
 `--db` (default `data/feature_phone_clank.db`) and `--scope` (default
 `config/scope.yaml`) are available globally.
+
+## Notifications (Stage 4)
+
+`collect -> classify -> persist observation -> diff -> persist event` is
+unchanged and remains independent of delivery. Every newly-persisted event
+enqueues a notification into the durable `notifications` outbox
+(`core/notifications.py` decides eligibility; `providers/discord` renders
+and sends). A Discord outage never blocks collection, never re-runs a
+collector, and never duplicates an event or a notification — dedup is by
+`Event.dedup_key()`, enforced by a DB `UNIQUE` constraint, not a timestamp
+check.
+
+**Eligibility policy** (`core/notifications.py`):
+
+| Notify by default | Suppressed by default (retained, never pushed) |
+|---|---|
+| `NEW_PRODUCT` | `SPECS_BECAME_UNAVAILABLE` |
+| `FIELD_CHANGED` | `CLASSIFICATION_CHANGED` |
+| `PRODUCT_REMOVED` | `REGIONAL_VARIANT` (not currently produced) |
+| `SPECS_BECAME_AVAILABLE` | `AVAILABILITY_CHANGED` (not currently produced) |
+| `IDENTITY_ANOMALY` | `SOURCE_DEGRADED` (not currently produced) |
+
+**Outbox status values** (`notifications.status`, matches the schema's
+pre-existing convention rather than introducing a parallel one): `pending`
+(queued or transiently failed — retried automatically), `sent` (delivered),
+`failed` (terminal after `MAX_ATTEMPTS=5`, see `providers/discord`), or
+`suppressed` (policy decided not to notify; still audit-visible).
+
+**Credentials**: set `FEATURE_PHONE_CLANK_DISCORD_WEBHOOK_URL` in the
+environment. Never hard-coded, never committed, never logged — unset means
+notifications still enqueue but delivery no-ops (`remaining` count in
+`deliver`'s output tells you how many are waiting).
+
+**Owner field test**: `feature-phone-clank test-notify --webhook <test URL>`
+sends an unmistakably marked `FEATURE-01 TEST` embed through the real
+delivery code path without creating any `events`/`products` row. Sending to
+the configured production webhook (no `--webhook` override) requires
+`--confirm-production`.
+
+**Retry**: `feature-phone-clank deliver --requeue-failed` moves terminally
+`failed` rows back to `pending` (e.g. after fixing the webhook URL) without
+losing their `attempts`/`last_error` history, then attempts delivery.
 
 ## Scheduling
 
@@ -95,5 +140,7 @@ API, or provider metadata is referenced anywhere in this project.
 pytest
 ```
 
-84 tests as of the last check, using only fixtures under `tests/fixtures/hmd/` — no
-live network access in the automated suite.
+111 tests / 1 skipped as of the last check (90/1 baseline + 21 new for Stage
+4 notifications/delivery/acceptance-drill), using only fixtures under
+`tests/fixtures/hmd/` and a fake Discord sender — no live network access, and
+no real webhook is ever contacted, in the automated suite.
