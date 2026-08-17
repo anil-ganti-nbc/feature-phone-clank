@@ -17,3 +17,8 @@ def resolve_data_path(configured: str) -> Path:
         directory.mkdir(parents=True, exist_ok=True)
         return directory / "feature_phone_clank.db"
     return Path(configured).resolve()
+
+
+def resolve_config_path(name: str) -> Path:
+    root = os.environ.get("FEATURE_PHONE_CLANK_CONFIG_ROOT")
+    return (Path(root).resolve() if root else Path.cwd()) / "config" / name
