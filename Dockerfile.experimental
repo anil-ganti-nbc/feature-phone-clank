@@ -1,0 +1,45 @@
+# Feature Phone Clank — EXPERIMENTAL SOAK image (itel + Lava, PR #9 /
+# branch expansion/itel-lava). Completely separate build from the
+# production Dockerfile: this is the ONLY image that carries the
+# Playwright/Chromium dependency itel needs, so it never inflates the
+# production HMD image or its build time. Never used for hmd-nokia.
+FROM python:3.12-slim-bookworm
+
+ARG GIT_REVISION=unknown
+LABEL clank.id="feature-phone-clank-experimental" \
+      org.opencontainers.image.revision="${GIT_REVISION}"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    FEATURE_PHONE_CLANK_RELEASE_CHANNEL=experimental \
+    FEATURE_PHONE_CLANK_SOURCE_REVISION=${GIT_REVISION} \
+    PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+
+WORKDIR /app
+
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin clank
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY config ./config
+
+# `playwright install --with-deps chromium` needs root (apt-get) for the
+# system libraries Chromium needs — must happen before USER clank. The
+# browser binary itself is written to PLAYWRIGHT_BROWSERS_PATH (set above,
+# under /app so it can be chowned to clank alongside everything else)
+# rather than root's default cache dir, so the non-root runtime user can
+# actually launch it.
+RUN pip install --upgrade pip \
+    && pip install .[itel] \
+    && playwright install --with-deps chromium \
+    && mkdir -p /app/data \
+    && chown -R clank:clank /app
+
+USER clank
+
+HEALTHCHECK --interval=60s --timeout=15s --start-period=20s --retries=3 \
+    CMD ["feature-phone-clank", "health", "--db", "data/feature_phone_clank_experimental.db"]
+
+ENTRYPOINT ["feature-phone-clank"]
+CMD ["run-experimental"]
