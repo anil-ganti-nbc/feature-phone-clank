@@ -11,6 +11,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# itel-india.com is a client-rendered SPA with no discoverable API/SSR path
+# (see collectors/itel.py module docstring and
+# docs/FEATURE_PHONE_SCOPE_EXPANSION.md) — a headless browser is the
+# smallest mechanism that works. Kept as an optional extra so the base
+# install (and every other collector) never pays for a ~300MB browser
+# download; only needed for `feature-phone-clank run-experimental` against
+# itel-india, never for hmd-nokia or the test suite.
+itel = ["playwright>=1.40"]
 
 [project.scripts]
 feature-phone-clank = "feature_phone_clank.cli:main"
