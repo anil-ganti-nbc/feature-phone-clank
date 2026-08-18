@@ -756,7 +756,71 @@ weak and it only has 2 real runs behind it, against a live-caught-and-
 fixed parsing bug in the same session. E3 (specialist collectors) remains
 deliberately not implemented — a real architecture decision (new event
 type) is needed first, matching one of the brief's own stop conditions.
-No *scheduled/unattended* soak has started for itel or Lava — only the 2
-manual baseline runs each documented above. Neither itel nor Lava is
-production-promoted; the DB retirement/reset has not been touched; no
-Hetzner deployment was made.
+Neither itel nor Lava is production-promoted; the DB retirement/reset has
+not been touched.
+
+## 18. Experimental Hetzner soak deployment (2026-08-18)
+
+A 3-5 day unattended soak is now live for both sources, deployed
+completely separately from production HMD.
+
+- **Checkout:** `/home/anilganti/feature-phone-clank-experimental/`
+  (my own home directory — deliberately outside `/home/deploy/staging/`,
+  the deploy user's production tree), pinned to commit `49eab25` on
+  `expansion/itel-lava`.
+- **Image:** `feature-phone-clank-experimental:49eab25`, built from the
+  new `Dockerfile.experimental` (adds the `[itel]` extra +
+  `playwright install --with-deps chromium` on top of the same base image
+  and non-root-user pattern as production's `Dockerfile`).
+- **Compose:** `docker-compose.experimental.yml` — two services (`itel`,
+  `lava`) sharing one image, one named volume
+  (`feature_phone_clank_experimental_data`, distinct from production's
+  `feature_phone_clank_staging_data`), one DB
+  (`data/feature_phone_clank_experimental.db`) and one lock
+  (`data/feature-phone-clank-experimental.lock`) — `RunLock` serializes
+  the two if their cron times ever collide.
+- **Scheduler:** cron entries under **my own `anilganti` crontab**, not
+  `deploy`'s (no write access there, and this keeps production cron
+  physically incapable of referencing the experimental stack): itel at
+  02:00/10:00/18:00 UTC (3x/day), Lava at 01:30/07:30/13:30/19:30 UTC
+  (4x/day, offset 30min from HMD's own 01:15/07:15/13:15/17:15 to avoid
+  resource contention on shared cron minutes).
+- **Logs:** `logs-experimental/cron-itel-YYYYMMDD.log`,
+  `logs-experimental/cron-lava-YYYYMMDD.log`.
+- **Controlled validation (before enabling cron):** one manual run each
+  via `scripts/deploy_run_experimental.sh`, both against the live sites,
+  both matching the local baseline exactly — itel: 6/6 accepted products,
+  clean names (the card-text fix holds inside the container too); Lava:
+  11/11 accepted products. itel's Playwright/Chromium path confirmed
+  working inside the container (`--with-deps` system libraries installed
+  correctly at build time) — 15.7s wall clock for the containerized run
+  vs ~8.8s locally, reasonable overhead.
+- **Isolation proof (before/after the two validation runs):** production
+  HMD volume's DB SHA-256 identical before and after
+  (`fff75c93f19c733ea66197642fe007445b002c02e6a92a8757344ae66693d47c`);
+  `docker volume ls` confirms two fully separate volumes exist; the
+  production checkout's `git log`/`.deployed-id` (`c749df3`) unchanged;
+  `config/scope.yaml` in both checkouts still lists `hmd-nokia` only.
+- **Production Discord:** not touched — no notification/Discord code
+  exists anywhere in the itel/Lava/runner code path (confirmed by
+  earlier grep), and PR #6 (where that code lives) was never merged into
+  this branch or main.
+- **Monitoring during the soak:** `feature-phone-clank status --db
+  data/feature_phone_clank_experimental.db` / `events` / `report` (all
+  already support pointing at the experimental DB) from inside the
+  experimental checkout, or via
+  `docker run --rm -v feature_phone_clank_experimental_data:/app/data
+  feature-phone-clank-experimental:49eab25 status`.
+- **Tracked per source, per the soak's own review criteria:** product
+  count, canonical URL stability, display-name stability, identity
+  anomalies, false events, ambiguous count, incomplete products, parser/
+  transport failures, run duration — all already captured by the existing
+  `collector_runs`/`run_errors`/`classification_log`/`events` tables, no
+  new schema needed.
+- **Rollback:** remove the two cron lines from `anilganti`'s crontab
+  (`crontab -e`); the volume/directory are fully separate from
+  production, so nothing else needs to change regardless of outcome.
+- **Not done, per instruction:** no identity-layer changes (only a
+  concrete live collision/rename/URL-churn/duplicate would justify one),
+  no specialist-source work, no production promotion, no combining with
+  PR #6.
