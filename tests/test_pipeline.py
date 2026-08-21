@@ -187,6 +187,25 @@ def test_sku_mismatch_on_existing_url_raises_anomaly_without_overwriting(store):
     assert product["model_number"] == "SKU1"
 
 
+def test_sku_mismatch_does_not_reraise_on_unchanged_rerun(store):
+    """Regression (notification-semantics review): `products.model_number`
+    is never updated after creation (by design — see the test above), so
+    without gating on `is_new_obs` the SKU-mismatch comparison stayed true
+    forever after a single real flip, minting a second, spurious
+    identity_anomaly event/notification for a rerun where nothing actually
+    changed. Only the genuine flip may raise an anomaly."""
+    collector = ScriptedCollector([
+        ([make_discovery("p1", model_number="SKU1")], []),
+        ([make_discovery("p1", model_number="SKU2")], []),  # genuine flip: 1 anomaly
+        ([make_discovery("p1", model_number="SKU2")], []),  # unchanged rerun: must NOT raise again
+        ([make_discovery("p1", model_number="SKU2")], []),  # and again
+    ])
+    for _ in range(4):
+        _run(collector, store)
+    anomalies = [e for e in _events(store) if e["event_type"] == "identity_anomaly"]
+    assert len(anomalies) == 1
+
+
 # -- 10/11: spec completeness transitions -----------------------------------
 
 def test_specs_incomplete_to_complete_fires_specs_became_available(store):

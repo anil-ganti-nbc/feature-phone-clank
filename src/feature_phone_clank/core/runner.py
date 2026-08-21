@@ -36,6 +36,7 @@ class ScopeError(Exception):
 def run_production_collector(
     collector: BaseCollector, store, scope: ScopeConfig,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
+    notifier=None,
 ) -> tuple[CollectorRunResult, dict]:
     if not is_production(collector.source_key, scope):
         raise ScopeError(
@@ -44,12 +45,13 @@ def run_production_collector(
             f"Use run_experimental() for unapproved collectors."
         )
     return _run(collector, store, manufacturer=manufacturer, source_type=source_type,
-                region=region, base_url=base_url)
+                region=region, base_url=base_url, notifier=notifier)
 
 
 def run_experimental(
     collector: BaseCollector, store,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
+    notifier=None,
 ) -> tuple[CollectorRunResult, dict]:
     """Run a collector not (yet) approved for production. Caller is
     responsible for passing a throwaway store (e.g. `SqliteStore(":memory:")`)
@@ -57,12 +59,13 @@ def run_experimental(
     let an experimental collector run somewhere that isn't the production
     database."""
     return _run(collector, store, manufacturer=manufacturer, source_type=source_type,
-                region=region, base_url=base_url)
+                region=region, base_url=base_url, notifier=notifier)
 
 
 def _run(
     collector: BaseCollector, store,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
+    notifier=None,
 ) -> tuple[CollectorRunResult, dict]:
     source_id = store.ensure_source(
         collector.source_key, manufacturer, source_type, region, base_url, {}
@@ -124,6 +127,7 @@ def _run(
     stats = process_run(
         store, collector.source_key, source_id, discoveries,
         classification_transitions, is_baseline,
+        notify=notifier.enqueue if notifier is not None else None,
     )
     store.run_finished(
         run_id, "ok", stats, result.errors,

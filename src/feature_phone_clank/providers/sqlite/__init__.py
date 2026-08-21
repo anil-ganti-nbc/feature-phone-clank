@@ -51,6 +51,10 @@ _MIGRATIONS: dict[int, list[str]] = {
 }
 
 
+def _last_sent_at(row: sqlite3.Row | None) -> str | None:
+    return row["sent_at"] if row is not None else None
+
+
 def connect_readonly(db_path: str) -> sqlite3.Connection:
     """Open read-only; never migrates, never locks. Safe to call against a
     live database (health checks, status queries)."""
@@ -357,6 +361,8 @@ class SqliteStore:
             "duplicate_dedup_keys": [dict(r) for r in dupe_check],
             "active_product_count": self.active_product_count(source_key),
             "schema_version": self.schema_version(),
+            "notification_counts": self.notification_counts("discord"),
+            "last_successful_delivery": _last_sent_at(self.last_sent_notification("discord")),
         }
 
     # -- classification quarantine ---------------------------------------
@@ -431,3 +437,85 @@ class SqliteStore:
         return self.db.execute(
             "SELECT * FROM collector_runs ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
+
+    # -- notifications / delivery outbox (Stage 4) -----------------------
+    #
+    # The `notifications` table (schema.sql) predates this stage by design
+    # (brief section 5/14/15) — nothing here required a migration. `status`
+    # keeps this project's existing convention (pending | sent | failed |
+    # suppressed) rather than introducing a parallel vocabulary:
+    #   pending    -> queued, will be attempted (or retried) on next drain
+    #   sent       -> delivered ("delivered" in brief terms)
+    #   failed     -> terminal after MAX_ATTEMPTS (providers/discord)
+    #   suppressed -> eligible-events policy decided not to notify (retained)
+    # A transient failure simply stays `pending` (retry-safe by construction,
+    # no separate failed_retryable state needed) until MAX_ATTEMPTS is hit.
+
+    def notification_put(
+        self, provider: str, dedup_key: str, payload: dict,
+        event_id: int | None, status: str,
+    ) -> None:
+        """INSERT OR IGNORE on the UNIQUE dedup_key: re-enqueuing the same
+        event (a rerun, a restarted process, a retried scheduler tick)
+        never creates a second notification row (brief section 6:
+        deduplication)."""
+        self.db.execute(
+            "INSERT OR IGNORE INTO notifications(event_id, provider, dedup_key, "
+            "payload_json, status) VALUES (?,?,?,?,?)",
+            (event_id, provider, dedup_key, json.dumps(payload, default=str), status),
+        )
+        self.db.commit()
+
+    def notification_by_dedup_key(self, dedup_key: str) -> sqlite3.Row | None:
+        return self.db.execute(
+            "SELECT * FROM notifications WHERE dedup_key=?", (dedup_key,)
+        ).fetchone()
+
+    def pending_notifications(self, provider: str) -> list[sqlite3.Row]:
+        return self.db.execute(
+            "SELECT * FROM notifications WHERE provider=? AND status='pending' "
+            "ORDER BY id", (provider,),
+        ).fetchall()
+
+    def mark_notification(self, notification_id: int, status: str, error: str | None = None) -> None:
+        self.db.execute(
+            "UPDATE notifications SET status=?, attempts=attempts+1, last_error=?, "
+            "sent_at=CASE WHEN ?='sent' THEN datetime('now') ELSE sent_at END WHERE id=?",
+            (status, error, status, notification_id),
+        )
+        self.db.commit()
+
+    def notification_counts(self, provider: str | None = None) -> dict[str, int]:
+        clause, params = ("WHERE provider=?", (provider,)) if provider else ("", ())
+        return {
+            r["status"]: r["c"] for r in self.db.execute(
+                f"SELECT status, COUNT(*) c FROM notifications {clause} GROUP BY status", params,
+            ).fetchall()
+        }
+
+    def notifications_by_status(self, status: str, provider: str | None = None, limit: int = 50) -> list[sqlite3.Row]:
+        clauses, params = ["status=?"], [status]
+        if provider:
+            clauses.append("provider=?")
+            params.append(provider)
+        params.append(limit)
+        return self.db.execute(
+            f"SELECT * FROM notifications WHERE {' AND '.join(clauses)} "
+            f"ORDER BY id DESC LIMIT ?", params,
+        ).fetchall()
+
+    def last_sent_notification(self, provider: str | None = None) -> sqlite3.Row | None:
+        clause, params = ("WHERE provider=? AND status='sent'", (provider,)) if provider else ("WHERE status='sent'", ())
+        return self.db.execute(
+            f"SELECT * FROM notifications {clause} ORDER BY sent_at DESC LIMIT 1", params,
+        ).fetchone()
+
+    def requeue_failed_notifications(self, provider: str | None = None) -> int:
+        """Operator-triggered retry (brief section 10: 'can failed delivery
+        retry safely?'). Moves terminally-`failed` rows back to `pending`
+        without resetting `attempts` — the history of prior failures is
+        preserved, not erased."""
+        clause, params = ("WHERE provider=? AND status='failed'", (provider,)) if provider else ("WHERE status='failed'", ())
+        cur = self.db.execute(f"UPDATE notifications SET status='pending' {clause}", params)
+        self.db.commit()
+        return cur.rowcount
