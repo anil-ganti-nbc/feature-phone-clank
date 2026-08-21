@@ -1,0 +1,27 @@
+name: fleet-laws
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: feature-phone-clank
+      - uses: actions/checkout@v4
+        with:
+          repository: anil-ganti-nbc/clank-architecture
+          ref: main
+          path: clank-architecture
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run Fleet Laws conformance suite
+        working-directory: clank-architecture/conformance
+        run: |
+          pip install pytest pyyaml
+          pytest -q
