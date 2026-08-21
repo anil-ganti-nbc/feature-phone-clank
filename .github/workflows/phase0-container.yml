@@ -1,0 +1,21 @@
+name: Phase 0 Container
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    name: build / container-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Build without publishing
+        run: docker build --tag phase0-local:${{ github.sha }} .
+      - name: Inspect built image
+        run: docker image inspect phase0-local:${{ github.sha }} --format '{{.Id}}'

@@ -1,0 +1,177 @@
+name: Phase 0 CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, diagnostic-clank-2026-08]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase0-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  NO_COLOR: "1"
+
+jobs:
+  quality:
+    name: ci / install-lint-types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Clean locked installation
+        run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+      - name: Verify dependency lock
+        run: |
+          uv lock --check
+      - name: Required correctness lint
+        run: |
+          python -m pip install ruff==0.12.11
+          ruff check --select E9,F63,F7,F82 .
+      - name: Type or bytecode validation
+        run: |
+          uv run python -m compileall -q src
+  advisory-style:
+    name: advisory / full-style-format
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ruff==0.12.11
+      - run: ruff check . && ruff format --check .
+  tests:
+    name: ci / tests-and-collection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Clean locked installation
+        run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+      - name: Complete test collection
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest --collect-only -q | tee test-collection.txt
+          test -s test-collection.txt
+      - name: Full hermetic test suite
+        env:
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+        run: |
+          uv run pytest -q
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: feature-phone-clank-test-collection
+          path: test-collection.txt
+          if-no-files-found: error
+  security:
+    name: security / secrets-and-dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Scan Git history and tree for secrets
+        shell: bash
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.0
+          "$(go env GOPATH)/bin/gitleaks" git --redact --no-banner
+          "$(go env GOPATH)/bin/gitleaks" dir . --redact --no-banner
+      - name: Install and audit locked dependencies
+        run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+          python -m pip install pip-audit==2.9.0
+          uv run --with pip-audit==2.9.0 pip-audit --progress-spinner off
+  build:
+    name: build / package-sbom-provenance
+    runs-on: ubuntu-latest
+    needs: [quality, tests]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build from clean source
+        run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+          python -m pip install build==1.2.2.post1 cyclonedx-bom==7.1.0
+          uv build
+      - name: Generate reproducible SBOM and source provenance
+        shell: bash
+        run: |
+          mkdir -p dist
+          cyclonedx-py environment --output-reproducible --of JSON -o dist/sbom.cdx.json "$(uv run which python)"
+          python -c 'import hashlib,json,os,pathlib; files=[p for p in pathlib.Path(".").rglob("*lock*") if p.is_file() and ".git" not in p.parts]; data={"git_sha":os.environ["GITHUB_SHA"],"repository":os.environ["GITHUB_REPOSITORY"],"locks":{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}}; pathlib.Path("dist/provenance.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\n")'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: feature-phone-clank-build-sbom-provenance
+          path: dist/
+          if-no-files-found: error
+  state:
+    name: state / backup-restore
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+      - name: Stateful integrity and restore smoke
+        run: |
+          uv run pytest -q tests/test_db_migrations.py
+  windows:
+    name: platform / windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Clean locked installation
+        shell: pwsh
+        run: |
+          python -m pip install uv==0.11.32
+          uv sync --locked --all-extras
+      - name: Collect and run full suite
+        shell: pwsh
+        env:
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+        run: |
+          uv run pytest --collect-only -q
+          uv run pytest -q
