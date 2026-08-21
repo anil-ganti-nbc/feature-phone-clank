@@ -1,5 +1,8 @@
 import threading
-from urllib.request import urlopen
+import urllib.error
+from urllib.request import Request, urlopen
+
+import pytest
 
 from feature_phone_clank.dashboard import render, serve
 from feature_phone_clank.paths import resolve_data_path
@@ -36,6 +39,31 @@ def test_dashboard_http_root_dispatches_from_isolated_state(monkeypatch, tmp_pat
             body = response.read().decode()
         assert response.status == 200
         assert "Feature Phone Clank" in body
+    finally:
+        server.shutdown()
+        thread.join(timeout=3)
+        server.server_close()
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "192.168.1.10", "::"])
+def test_dashboard_rejects_non_loopback_bind(host):
+    with pytest.raises(ValueError, match="must be loopback"):
+        serve(host=host, port=0)
+
+
+def test_dashboard_rejects_unauthenticated_collection_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_DATA_DIR", str(tmp_path / "field-test"))
+    server = serve(port=0, controller=object())
+    thread = threading.Thread(target=server.serve_forever)
+    thread.start()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/api/local-collection/run",
+            data=b"", method="POST",
+        )
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            urlopen(request, timeout=3)
+        assert exc.value.code == 403
     finally:
         server.shutdown()
         thread.join(timeout=3)

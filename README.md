@@ -1,5 +1,9 @@
 # Feature Phone Clank
 
+> **Phase 0: UNVERIFIED_PRODUCTION — promotion frozen.** The unauthenticated
+> dashboard is loopback-only and its collection mutation is disabled until an
+> authenticated profile exists.
+
 > Status: Experimental / under construction
 
 Change-detection intelligence for official feature-phone sources (FEATURE-01). Crawls
