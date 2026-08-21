@@ -1,5 +1,6 @@
 import threading
 import urllib.error
+from pathlib import Path
 from urllib.request import Request, urlopen
 
 import pytest
@@ -72,8 +73,8 @@ def test_dashboard_rejects_unauthenticated_collection_mutation(monkeypatch, tmp_
 
 
 def test_macos_build_replaces_the_app_bundle_and_imports_dashboard_statically():
-    root = __file__.replace("/tests/test_field_test_dashboard.py", "")
-    with open(f"{root}/native/macos/build.sh", encoding="utf-8") as build:
+    root = Path(__file__).resolve().parents[1]
+    with (root / "native/macos/build.sh").open(encoding="utf-8") as build:
         assert "--windowed" in build.read()
-    with open(f"{root}/native/macos/launcher.py", encoding="utf-8") as launcher:
+    with (root / "native/macos/launcher.py").open(encoding="utf-8") as launcher:
         assert "from feature_phone_clank.dashboard import serve" in launcher.read()
