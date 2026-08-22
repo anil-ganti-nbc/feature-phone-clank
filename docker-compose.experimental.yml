@@ -1,0 +1,66 @@
+# Feature Phone Clank — EXPERIMENTAL SOAK ONLY (itel + Lava, branch
+# expansion/itel-lava / PR #9). Deliberately a separate compose file, not
+# an extension of docker-compose.staging.yml: distinct image
+# (Dockerfile.experimental, carries Playwright/Chromium), distinct named
+# volume (feature_phone_clank_experimental_data — never
+# feature_phone_clank_staging_data, which is the production HMD volume),
+# distinct container names, no ports, no Docker socket, restart disabled
+# (soak runs launched by cron, same one-shot pattern as production).
+#
+# Both services share one volume/DB/lock file on purpose — `run-experimental`
+# already serializes via RunLock, so a lava run started while an itel run
+# is still in flight correctly waits/locks rather than corrupting state,
+# exactly like production's single-writer pattern.
+#
+# This file has no effect on config/scope.yaml (still hmd-nokia only) or
+# on any production container/volume/cron entry.
+services:
+  itel:
+    build:
+      context: .
+      dockerfile: Dockerfile.experimental
+      args:
+        GIT_REVISION: ${GIT_REVISION:-unknown}
+    image: feature-phone-clank-experimental:${IMAGE_TAG:-soak-local}
+    container_name: feature-phone-clank-experimental-itel
+    restart: "no"
+    environment:
+      FEATURE_PHONE_CLANK_RELEASE_CHANNEL: experimental
+    volumes:
+      - feature_phone_clank_experimental_data:/app/data
+    working_dir: /app
+    command:
+      - "run-experimental"
+      - "--sources"
+      - "itel-india"
+      - "--experimental-db"
+      - "data/feature_phone_clank_experimental.db"
+      - "--lock-path"
+      - "data/feature-phone-clank-experimental.lock"
+
+  lava:
+    build:
+      context: .
+      dockerfile: Dockerfile.experimental
+      args:
+        GIT_REVISION: ${GIT_REVISION:-unknown}
+    image: feature-phone-clank-experimental:${IMAGE_TAG:-soak-local}
+    container_name: feature-phone-clank-experimental-lava
+    restart: "no"
+    environment:
+      FEATURE_PHONE_CLANK_RELEASE_CHANNEL: experimental
+    volumes:
+      - feature_phone_clank_experimental_data:/app/data
+    working_dir: /app
+    command:
+      - "run-experimental"
+      - "--sources"
+      - "lava-india"
+      - "--experimental-db"
+      - "data/feature_phone_clank_experimental.db"
+      - "--lock-path"
+      - "data/feature-phone-clank-experimental.lock"
+
+volumes:
+  feature_phone_clank_experimental_data:
+    name: feature_phone_clank_experimental_data
