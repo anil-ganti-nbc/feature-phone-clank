@@ -10,3 +10,4 @@ data/*.lock
 
 # Local AI-tool config, not project content
 .claude/
+logs/
