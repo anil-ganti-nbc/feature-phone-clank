@@ -121,6 +121,54 @@ class SqliteStore:
             "SELECT COALESCE(MAX(version), 0) v FROM schema_migrations"
         ).fetchone()["v"]
 
+    def backup_to(self, target: str | Path, *, overwrite: bool = False) -> dict:
+        """SQLite-safe snapshot into `target` (DATA_SURVIVABILITY Layer A).
+
+        Uses the SQLite online backup API (safe against the live WAL
+        database — never a filesystem copy of sidecar files), writes to
+        `<target>.partial` and atomically renames so a killed process can
+        never leave a torn "backup". The snapshot is then verified in place
+        (PRAGMA integrity_check) and identified (size + SHA-256). An
+        existing target is refused unless `overwrite=True`, because a
+        backup command that silently destroys the previous recovery point
+        is itself a destructive operation."""
+        import os
+
+        target_path = Path(target)
+        if target_path.exists() and not overwrite:
+            raise FileExistsError(
+                f"backup target already exists (refusing to overwrite a "
+                f"recovery point without --force): {target_path}"
+            )
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        partial = target_path.with_name(target_path.name + ".partial")
+        if partial.exists():
+            partial.unlink()
+        dest = sqlite3.connect(str(partial))
+        try:
+            with dest:
+                self.db.backup(dest)
+        finally:
+            dest.close()
+        # Verify the snapshot before it earns the name: integrity plus identity.
+        check = sqlite3.connect(str(partial))
+        try:
+            result = check.execute("PRAGMA integrity_check").fetchone()[0]
+        finally:
+            check.close()
+        if result != "ok":
+            partial.unlink(missing_ok=True)
+            raise RuntimeError(f"backup failed integrity_check: {result}")
+        os.replace(partial, target_path)
+        data = target_path.read_bytes()
+        return {
+            "path": str(target_path),
+            "integrity_check": result,
+            "size_bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "schema_version": self.schema_version(),
+        }
+
     def close(self) -> None:
         self.db.close()
 

@@ -17,11 +17,13 @@ Jio — intentionally excluded from owner-defined source scope.
 
 - GitHub `main` HEAD: `8690c49` ("Enable interactive macOS collection").
 - Open PRs at the time of this work: #8 (macOS bundle-ID fix, unrelated),
-  #6 ("Completion Phase A: notification outbox + Discord delivery", **open,
-  not merged** — left untouched per owner instruction), #4 (Stage A docs,
-  draft, unrelated).
+  #6 ("Completion Phase A: notification outbox + Discord delivery", open at
+  the time — later merged to main as `73793fb`; left untouched per owner
+  instruction), #4 (Stage A docs, draft, unrelated).
 - Hetzner deployed revision: `c749df3`, predates PR #6 — **Discord/
-  notifications are not live in production.**
+  notifications were not live in production at the time of this work.**
+  (Post-loss note, 2026-08-25: the Hetzner volume was destroyed on
+  2026-08-23; see the continuity registry — fpc-epoch-2.)
 - Production scope (`config/scope.yaml`): `hmd-nokia` only.
 - Production DB (queried live via the Hetzner Docker volume): 44 products,
   healthy history back to 2026-08-09.
@@ -560,13 +562,14 @@ mediocre ones."
   — nothing about their data shape required a new type. The specialist-lead
   question (section 6) is the one place a new type (`SPECIALIST_LEAD`) is
   proposed but deliberately not yet implemented.
-- **Notification behaviour:** unchanged — PR #6 (Discord/outbox) is not
-  merged to main and not deployed; this pass didn't touch it, per the
-  owner's explicit instruction to leave it alone.
-- **Experimental Discord behaviour:** N/A yet — no notification path is
-  wired to itel/Lava at all (they're not in `config/scope.yaml`, and
-  `run_experimental` never invokes any Discord/outbox code, which today
-  only exists on the unmerged PR #6 branch regardless). No risk of
+- **Notification behaviour:** unchanged — PR #6 (Discord/outbox) merged to
+  main as `73793fb` *after* this document was written (2026-08-18); the
+  statement "not merged to main" below was true at authoring time and is now
+  historical. This pass didn't touch it, per the owner's explicit
+  instruction to leave it alone.
+- **Experimental Discord behaviour:** N/A — no notification path is wired to
+  itel/Lava at all (they're not in `config/scope.yaml`, and
+  `run_experimental` never invokes any Discord/outbox code). No risk of
   experimental noise reaching the owner's real feed.
 
 ## 10. Experimental isolation
@@ -803,8 +806,9 @@ completely separately from production HMD.
   `config/scope.yaml` in both checkouts still lists `hmd-nokia` only.
 - **Production Discord:** not touched — no notification/Discord code
   exists anywhere in the itel/Lava/runner code path (confirmed by
-  earlier grep), and PR #6 (where that code lives) was never merged into
-  this branch or main.
+  earlier grep), and PR #6 (where that code lived at authoring time) was
+  never merged into this branch. (It has since merged to main as
+  `73793fb`; the experimental runner still wires no notifier.)
 - **Monitoring during the soak:** `feature-phone-clank status --db
   data/feature_phone_clank_experimental.db` / `events` / `report` (all
   already support pointing at the experimental DB) from inside the

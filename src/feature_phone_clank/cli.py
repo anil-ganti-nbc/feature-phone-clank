@@ -1,5 +1,6 @@
-"""feature-phone-clank CLI: version | identity | health | run | status |
-events | report | deliver | notifications | test-notify.
+"""feature-phone-clank CLI: version | identity | health | run |
+run-experimental | status | events | report | deliver | notifications |
+test-notify | backup | continuity.
 
 All machine-consumable output is JSON printed to stdout — no command's
 contract depends on parsing human-readable text (user constraint 9).
@@ -344,6 +345,94 @@ def cmd_test_notify(args: argparse.Namespace) -> int:
     return 0 if result["sent"] else 1
 
 
+def cmd_backup(args: argparse.Namespace) -> int:
+    """Create a verified SQLite-safe recovery point (DATA_SURVIVABILITY
+    Layer A). Takes the same single-instance lock as `run` so the snapshot
+    can never race a writer; verifies integrity before reporting success;
+    refuses to overwrite an existing recovery point without --force. The
+    continuity registry beside the database is snapshotted alongside the
+    .db file so epoch evidence travels with every backup."""
+    import hashlib
+
+    from .core.run_lock import LockError, RunLock
+    from .paths import resolve_data_path
+    from .providers.sqlite import SqliteStore
+
+    db_path = resolve_data_path(args.db)
+    if not Path(db_path).exists():
+        print(json.dumps({"status": "no_database", "database": str(db_path)}, indent=2))
+        return 1
+
+    lock = None
+    if not args.no_lock:
+        try:
+            lock = RunLock.acquire(args.lock_path)
+        except LockError as e:
+            print(json.dumps({"status": "locked", "message": str(e)}, indent=2))
+            return 2
+
+    store = None
+    try:
+        store = SqliteStore(str(db_path))
+        result = store.backup_to(args.output, overwrite=args.force)
+        continuity_src = Path(db_path).parent / "continuity" / "continuity-events.jsonl"
+        if continuity_src.exists():
+            continuity_dst = Path(args.output).with_name(
+                Path(args.output).name + ".continuity.jsonl"
+            )
+            continuity_dst.write_bytes(continuity_src.read_bytes())
+            raw = continuity_dst.read_bytes()
+            result["continuity_snapshot"] = {
+                "path": str(continuity_dst),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "size_bytes": len(raw),
+            }
+    finally:
+        if store is not None:
+            store.close()
+        if lock is not None:
+            lock.release()
+
+    print(json.dumps({"status": "ok", **result}, indent=2, default=str))
+    return 0
+
+
+def cmd_continuity(args: argparse.Namespace) -> int:
+    """Inspect (and, with --ensure-seed, materialise) the append-only
+    ADR-0006 continuity registry for this runtime. Read-only by default;
+    hash mismatches are reported, never silently repaired."""
+    from .core import continuity
+    from .paths import resolve_data_path
+
+    db_path = resolve_data_path(args.db)
+    if args.ensure_seed:
+        path = continuity.ensure_registry(db_path)
+        events = continuity.read_events(db_path)
+    elif Path(db_path).exists() or continuity.registry_path(db_path).exists():
+        path = continuity.registry_path(db_path)
+        events = continuity.read_events(db_path)
+    else:
+        print(json.dumps({
+            "status": "no_registry",
+            "message": "no continuity registry yet (run --ensure-seed to create it "
+                       "with the operator-verified epoch-2 seed records)",
+            "registry_path": str(continuity.registry_path(db_path)),
+        }, indent=2))
+        return 1
+    bad = continuity.verify_hashes(events)
+    epochs = sorted({e.get("new_epoch_id") for e in events if e.get("new_epoch_id")})
+    print(json.dumps({
+        "status": "ok",
+        "registry_path": str(path),
+        "epoch_id": continuity.EPOCH_ID,
+        "epochs": epochs,
+        "event_count": len(events),
+        "hash_mismatches": bad,
+        "events": events,
+    }, indent=2, default=str))
+    return 1 if bad else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="feature-phone-clank", description="Feature-phone product intelligence (FEATURE-01)"
@@ -415,6 +504,21 @@ def main(argv: list[str] | None = None) -> int:
                         help="explicit approval to send to the configured production webhook")
     p_test.add_argument("--note", help="extra text appended to the test message")
     p_test.set_defaults(func=cmd_test_notify)
+
+    p_backup = sub.add_parser("backup", help="create a verified SQLite-safe recovery point")
+    p_backup.add_argument("output", help="backup file path (refused if it exists, unless --force)")
+    p_backup.add_argument("--force", action="store_true",
+                          help="overwrite an existing backup file (never done by default)")
+    p_backup.add_argument("--no-lock", action="store_true",
+                          help="skip the single-instance lock (not recommended)")
+    p_backup.add_argument("--lock-path", default="data/feature-phone-clank.lock")
+    p_backup.set_defaults(func=cmd_backup)
+
+    p_cont = sub.add_parser("continuity", help="inspect the ADR-0006 continuity registry")
+    p_cont.add_argument("--ensure-seed", action="store_true",
+                        help="create the registry with operator-verified epoch seed records "
+                             "if absent (append-only; never edits existing records)")
+    p_cont.set_defaults(func=cmd_continuity)
 
     args = parser.parse_args(argv)
     return args.func(args)
