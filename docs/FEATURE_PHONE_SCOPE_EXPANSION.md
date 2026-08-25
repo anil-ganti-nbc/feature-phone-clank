@@ -828,3 +828,25 @@ completely separately from production HMD.
   concrete live collision/rename/URL-churn/duplicate would justify one),
   no specialist-source work, no production promotion, no combining with
   PR #6.
+
+---
+
+## Addendum (2026-08-25): Stage F — Punkt added; Light Phone / Mudita decided
+
+Live reconnaissance pass (2026-08-25), following the same evidence rules:
+
+- **ADD (experimental):** punkt-ch (punkt.ch) — Punkt.'s own Shopify
+  storefront with server-rendered schema.org ProductGroup JSON-LD and a
+  stable product sitemap index. MP02 is a genuine minimalist feature
+  phone; MC02/MC03 are secure smartphones (logged, not discovered); a
+  brand-new slug family quarantines as ambiguous for human review.
+  Registered as punkt-ch, runnable only via un-experimental against
+  the isolated experimental DB/lock; absent from config/scope.yaml.
+- **REJECT:** thelightphone.com — products.json returns an HTML page (JS
+  app, no structured endpoint); sitemap.xml returns HTML too. No simple
+  stable surface to parse without headless-browser work.
+- **DEFER:** Mudita (mudita.com / us.mudita.com) — products.json 404 /
+  connection failures from the recon environment on 2026-08-25; no stable
+  verified surface.
+- Specialist editorial sources: still none. dumbphones.org remains
+  COMMERCIAL DISCOVERY per section 6; no new specialist passed review.

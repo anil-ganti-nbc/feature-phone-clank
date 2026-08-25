@@ -2,6 +2,7 @@ from ..core.registry import collectors
 from .hmd import HmdCollector
 from .itel import ItelCollector
 from .lava import LavaCollector
+from .punkt import PunktCollector
 
 collectors.register("hmd-nokia")(HmdCollector)
 # EXPERIMENTAL — deliberately absent from config/scope.yaml. Registration
@@ -10,3 +11,4 @@ collectors.register("hmd-nokia")(HmdCollector)
 # core/runner.py, not the registry).
 collectors.register("itel-india")(ItelCollector)
 collectors.register("lava-india")(LavaCollector)
+collectors.register("punkt-ch")(PunktCollector)

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trimmed from live https://www.punkt.ch/sitemap.xml on 2026-08-25.
+     Query parameters on the child sitemaps drift as the catalogue changes;
+     the collector discovers the products sitemap URL from this index rather
+     than hard-coding it. -->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.punkt.ch/sitemap_agentic_discovery.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.punkt.ch/sitemap_products_1.xml?from=14981696946562&amp;to=15207186268546</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.punkt.ch/sitemap_pages_1.xml?from=689908416898&amp;to=699741405570</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.punkt.ch/it/sitemap_pages_1.xml</loc>
+  </sitemap>
+</sitemapindex>
