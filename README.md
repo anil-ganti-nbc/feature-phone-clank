@@ -26,6 +26,9 @@ feature-phone-clank report             # health + events + notifications + prove
 feature-phone-clank deliver            # (re)attempt delivery of pending notifications standalone
 feature-phone-clank notifications      # outbox counts, or --status pending|sent|failed|suppressed
 feature-phone-clank test-notify        # send a marked FEATURE-01 TEST notification
+feature-phone-clank backup <output>    # verified SQLite-safe recovery point (run-lock cooperative)
+feature-phone-clank continuity         # ADR-0006 continuity registry (epoch evidence)
+feature-phone-clank run-experimental   # soak-run itel/lava/punkt against the isolated experimental DB
 ```
 
 `--db` (default `data/feature_phone_clank.db`) and `--scope` (default
