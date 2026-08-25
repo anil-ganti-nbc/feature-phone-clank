@@ -1,0 +1,76 @@
+<!--
+Trimmed, real-shape snapshot of https://lavamobiles.com/featurephones?subCat=all
+(Next.js SSR/SSG page), captured 2026-08-18. The `__NEXT_DATA__` script tag
+carries the full page props as JSON, including every product's `parent_id`
+("featurephones" | "smartphones") — Lava's own first-party category field.
+The `smartphoneData` key name is exactly what Lava's frontend calls it,
+verbatim, even on this feature-phone listing page — not a typo introduced
+here. Trimmed to 4 products (2 clean feature phones, 1 mislabeled for the
+ambiguity test, 1 conflicting-with-smartphones-listing slug); the real page
+carries 11.
+-->
+<html><head></head><body>
+<div id="__next"></div>
+<script id="__NEXT_DATA__" type="application/json">
+{
+  "props": {
+    "pageProps": {
+      "smartphoneData": {
+        "status": 1,
+        "msg": "Product Datas",
+        "all_products": [
+          {
+            "id": 45,
+            "name": "Hero 600+",
+            "slug": "hero600-pluse",
+            "status": 1,
+            "price": 1599,
+            "cut_price": null,
+            "parent_id": "featurephones",
+            "category_id": 17,
+            "launch_date": "2024-06-30T00:00:00.000Z",
+            "new_launches": "no"
+          },
+          {
+            "id": 108,
+            "name": "Hero Shakti 2025",
+            "slug": "hero-shakti-2025",
+            "status": 1,
+            "price": 1099,
+            "cut_price": null,
+            "parent_id": "featurephones",
+            "category_id": 17,
+            "launch_date": null,
+            "new_launches": "yes"
+          },
+          {
+            "id": 200,
+            "name": "Mislabeled Phone",
+            "slug": "mislabeled-phone",
+            "status": 1,
+            "price": 999,
+            "cut_price": null,
+            "parent_id": "smartphones",
+            "category_id": 7,
+            "launch_date": "2025-01-01T00:00:00.000Z",
+            "new_launches": "no"
+          },
+          {
+            "id": 201,
+            "name": "Dual Listed",
+            "slug": "dual-listed",
+            "status": 1,
+            "price": 1299,
+            "cut_price": null,
+            "parent_id": "featurephones",
+            "category_id": 6,
+            "launch_date": null,
+            "new_launches": "no"
+          }
+        ]
+      }
+    }
+  }
+}
+</script>
+</body></html>

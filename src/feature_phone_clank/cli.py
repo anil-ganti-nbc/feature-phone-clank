@@ -112,6 +112,68 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run_experimental(args: argparse.Namespace) -> int:
+    """Run one or more registered-but-not-production-scoped collectors
+    (Stage E: itel, Lava, ...) against a caller-specified experimental
+    database — never the production `--db` path, and never subject to
+    `config/scope.yaml`. This is the CLI entry point `run_experimental()`
+    (core/runner.py) needed but never had one wired up for: that function
+    already refuses to touch scope, so the isolation guarantee here is
+    entirely "which store did we open" (`--experimental-db`), not a second
+    scope check. Deliberately its own lock file — an experimental run must
+    never be blocked by, or block, a concurrent production `run`."""
+    from . import collectors as _collectors  # noqa: F401 — import for registration side effect
+    from .core.registry import collectors
+    from .core.run_lock import LockError, RunLock
+    from .core.runner import run_experimental
+    from .core.scope import load_scope
+    from .providers.sqlite import SqliteStore
+
+    scope = load_scope(args.scope)
+    all_experimental = [name for name in collectors.names() if name not in scope.production_collectors]
+    requested = args.sources.split(",") if args.sources else all_experimental
+
+    lock = None
+    if not args.no_lock:
+        try:
+            lock = RunLock.acquire(args.lock_path)
+        except LockError as e:
+            print(json.dumps({"status": "locked", "message": str(e)}, indent=2))
+            return 2
+
+    store = SqliteStore(args.experimental_db)
+    results = []
+    try:
+        for source_key in requested:
+            if source_key not in collectors:
+                results.append({"source_key": source_key, "status": "unregistered"})
+                continue
+            if source_key in scope.production_collectors:
+                # a collector promoted to production scope stops being
+                # runnable through this experimental path with its old
+                # experimental history left dangling by accident
+                results.append({"source_key": source_key, "status": "now_production_scoped"})
+                continue
+            collector = collectors.get(source_key)()
+            result, stats = run_experimental(
+                collector, store,
+                manufacturer=getattr(collector, "manufacturer", "unknown"),
+                source_type=getattr(collector, "source_type", "catalogue"),
+                region=getattr(collector, "region", None),
+                base_url=getattr(collector, "base_url", ""),
+            )
+            results.append({"source_key": source_key, **stats})
+    finally:
+        store.close()
+        if lock is not None:
+            lock.release()
+
+    print(json.dumps({
+        "status": "ok", "experimental_db": args.experimental_db, "results": results,
+    }, indent=2, default=str))
+    return 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     from .providers.sqlite import SqliteStore
 
@@ -302,6 +364,23 @@ def main(argv: list[str] | None = None) -> int:
                        help="skip attempting notification delivery after collection "
                             "(pending notifications remain queued for `deliver`)")
     p_run.set_defaults(func=cmd_run)
+
+    p_run_exp = sub.add_parser(
+        "run-experimental",
+        help="run collectors NOT in config/scope.yaml (itel, Lava, ...) against an "
+             "isolated experimental database — never production",
+    )
+    p_run_exp.add_argument(
+        "--experimental-db", default="data/feature_phone_clank_experimental.db",
+        help="SQLite path for experimental-source state (separate from --db)",
+    )
+    p_run_exp.add_argument(
+        "--sources", help="comma-separated source_keys to run (default: every "
+                          "registered collector not in production scope)",
+    )
+    p_run_exp.add_argument("--no-lock", action="store_true")
+    p_run_exp.add_argument("--lock-path", default="data/feature-phone-clank-experimental.lock")
+    p_run_exp.set_defaults(func=cmd_run_experimental)
 
     p_status = sub.add_parser("status", help="recent collector run telemetry")
     p_status.add_argument("--limit", type=int, default=20)
