@@ -107,7 +107,21 @@ class HttpFetcher:
         import requests
 
         time.sleep(self.delay_s)
-        resp = requests.get(url, headers={"User-Agent": self.user_agent}, timeout=self.timeout)
+        try:
+            resp = requests.get(url, headers={"User-Agent": self.user_agent}, timeout=self.timeout)
+        except requests.exceptions.RequestException as exc:
+            # Every caller in this module treats FetchResult.status as the
+            # single source of truth for "did this fetch work" (non-200
+            # already means "fall back / skip", never "abort the whole
+            # crawl" -- see _parse_product's specs->base-page fallback and
+            # _sitemap_orphans' warn-and-skip). A network-level failure
+            # (timeout, connection reset, DNS...) is the same kind of
+            # single-page problem, not a reason to lose every other
+            # already-discovered product in this run. status=0 is not a
+            # real HTTP status, so it always fails the `== 200` checks and
+            # routes into the same fallback paths a 404/500 would.
+            log.warning("hmd-nokia: network error fetching %s: %r", url, exc)
+            return FetchResult(url=url, status=0, text="")
         return FetchResult(url=url, status=resp.status_code, text=resp.text)
 
 
