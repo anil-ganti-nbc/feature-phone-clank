@@ -33,7 +33,22 @@ import os, socket, threading, webbrowser, sys, time, urllib.request
 from pathlib import Path
 
 # native/windows/launcher.py -> native/windows -> native -> <repo root>
-REPO_ROOT = Path(__file__).resolve().parents[2]
+#
+# When frozen by PyInstaller (onefile), __file__ points into the
+# transient _MEIPASS extraction directory, not the checked-out repo --
+# parents[2] off of that is meaningless (and that directory is wiped
+# when the process exits). In that case there is no "own location" to
+# derive the repo root from, so we trust the process's starting working
+# directory instead: the frozen build's contract (see native/windows,
+# and Feature Phone Clank.spec) is that it must be launched with the
+# repo root as its CWD, exactly like the source-run case documented
+# above (the desktop launcher / any wrapper is expected to `cd` into the
+# repo before invoking the .exe -- a bare double-click from a directory
+# that is not the repo root will not find repo/data).
+if getattr(sys, "frozen", False):
+    REPO_ROOT = Path.cwd().resolve()
+else:
+    REPO_ROOT = Path(__file__).resolve().parents[2]
 os.chdir(REPO_ROOT)  # everything below resolves relative to the repo, not the caller's cwd
 
 LOG_DIR = REPO_ROOT / "logs"
