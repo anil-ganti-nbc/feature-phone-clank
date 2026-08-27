@@ -850,3 +850,62 @@ Live reconnaissance pass (2026-08-25), following the same evidence rules:
   verified surface.
 - Specialist editorial sources: still none. dumbphones.org remains
   COMMERCIAL DISCOVERY per section 6; no new specialist passed review.
+
+---
+
+## Wave 2 addendum (2026-08-27): four new experimental sources
+
+This addendum appends to, and does not rewrite, the historical Stage E/F
+evidence above. All probes were performed live 2026-08-27 with a plain HTTP
+client (no browser automation, no credentials, no access-control bypass),
+following the source-type preference order of the brief.
+
+### Live result matrix
+
+| Brand | Surface | Live evidence | Verdict |
+|---|---|---|---|
+| Doro | doro.com/en-gb/products/mobile-phones/ | Server-rendered `products-tile` anchors with `data-sku` + `data-name` + form-factor tags; 9 current products (780X, Leva L/E families) | **IMPLEMENT_NOW -> `doro-gb`** |
+| Sunbeam Wireless | sunbeamwireless.com/wp-json/wc/store/v1/products | Documented public WooCommerce Store API: 51 products, SKU/name/categories/availability; F1 Horizon + F1 Pro dumbphone/flip families | **IMPLEMENT_NOW -> `sunbeam-f1-us`** |
+| Mudita | mudita.com/page-data/products/page-data.json | First-party Gatsby page-data JSON listing catalogue items with own taxonomy (/products/phones/, /products/alarm-clocks/, /products/watches/); phones = Kompakt + Pure | **IMPLEMENT_NOW -> `mudita-com`** |
+| TCL / Alcatel | alcatelmobile.com/feature-phones/ | Alcatel brand (TCL-owned) WordPress storefront still live: feature-phones category with PDPs phone-1021/phone-1041. The tcl.com "mobile" listing is ANDROID-only in its naming evidence and was NOT used | **IMPLEMENT_NOW -> `tcl-alcatel-global`** |
+| Light Phone | thelightphone.com | Everything (incl. /sitemap.xml paths) returns a ~3 KB React SPA shell backed by a private Sanity/storefront API at storefront.lightphoneoperations.com - no public structured surface | UNRELIABLE (revisit if they publish an official feed) |
+| AGM | agmmobile.com (Shopify) | Catalogue is overwhelmingly Android rugged smartphones; only legacy M-series flip/bar feature phones remain (agm-m8-flip, us-agm-m7) | PROMISING_DEFER |
+| Energizer/Avenir | energizerphones.com unreachable (DNS) from probe host | Could not be assessed | UNKNOWN |
+| Maxcom | maxcom.store unreachable (DNS) | Could not be assessed | UNKNOWN |
+| Emporia | emporia.at Shopify products.json | Clean JSON surface with product_type=mobilephone split (11 simple senior phones, SKUs like V228.LTE.v3.bb.01) - genuinely strong candidate; deferred ONLY to cap wave size | PROMISING_DEFER (top recommendation for next wave) |
+| myPhone / Hammer | myphone.pl/en/products 404 | Site structure changed or region-blocked | UNRELIABLE |
+| TTfone / Easyfone / SPC / Artfone / CAT/Bullitt successor / Tecno | Not reached in this bounded pass | - | DEFERRED (not investigated to the bar) |
+
+Specialist editorial sources were NOT re-implemented in this wave: OEM
+first-party sources above now provide direct discovery signals, and prior
+research classifications for Moving Offline / dumbphones.org / Dumbph.com /
+BananaHackers etc. remain in force as corroboration-only.
+
+### Implemented source contracts
+
+All four collectors:
+
+- register via `collectors.register()` only (never scope.yaml);
+- run exclusively through `run-experimental` against the experimental store;
+- carry deterministic classification with quarantine logs
+  (`classification_log`) - smartphone lines (Doro Aurora), accessories and
+  services (Sunbeam), watches/clocks/software (Mudita), unrecognised slug
+  shapes (Alcatel) are rejected/quarantined with evidence;
+- use floors derived from each brand's own catalogue reality per brief
+  section 18: Doro floor=3 (9 live), Sunbeam floor=6 accepted phones
+  (~30 live), Mudita floor=1-with-zero-always-fails (2 live), Alcatel
+  floor=1 (2 live);
+- identity: Sunbeam/Doro manufacturer SKUs first; Mudita/Alcatel stable
+  slugs where no public SKU exists (documented limitation).
+
+### Baseline / re-sight proof (live pipeline, real fetches, throwaway store)
+
+| source | baseline | events | immediate re-sight | notifications pending |
+|---|---|---|---|---|
+| doro-gb | ok, discovered 9 | 0 | ok, new 0 / updated 9 | 0 |
+| mudita-com | ok, discovered 2 | 0 | ok, new 0 / updated 2 | 0 |
+| sunbeam-f1-us | ok, discovered 30 | 0 | ok, new 0 / updated 30 | 0 |
+| tcl-alcatel-global | ok, discovered 2 | 0 | ok, new 0 / updated 2 | 0 |
+
+FIRST_SEEN != NOVELTY held for every new source through the production
+pipeline semantics (catastrophic-zero guard, baseline flagging).
