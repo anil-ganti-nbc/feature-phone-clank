@@ -14,6 +14,12 @@ services:
     restart: "no"
     environment:
       FEATURE_PHONE_CLANK_RELEASE_CHANNEL: experimental
+      # Delivery plumbing for the Stage-4 notifications outbox. The secret
+      # itself lives in an .env file next to this compose file (never in
+      # git); providers/discord no-ops with "no webhook configured" while
+      # it is unset, so this passthrough is safe to ship before the
+      # operator creates the secret.
+      FEATURE_PHONE_CLANK_DISCORD_WEBHOOK_URL: ${FEATURE_PHONE_CLANK_DISCORD_WEBHOOK_URL:-}
     volumes:
       - feature_phone_clank_data:/app/data
     working_dir: /app
