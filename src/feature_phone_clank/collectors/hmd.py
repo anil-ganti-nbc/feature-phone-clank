@@ -87,42 +87,115 @@ class FetchResult(BaseModel):
     url: str
     status: int
     text: str = ""
+    # Classification of a network-level failure ("timeout",
+    # "connection_error", "network_error"); empty for any real HTTP
+    # response (including 4xx/5xx — those are honest server answers, not
+    # transport failures). Purely additive evidence: callers keep deciding
+    # on `status` alone.
+    error: str = ""
 
 
 class Fetcher(Protocol):
     def get(self, url: str) -> FetchResult: ...
 
 
+def _classify_network_error(requests_mod, exc: Exception) -> str:
+    """Coarse transport-failure classification for logs/FetchResult.error."""
+    if isinstance(exc, requests_mod.exceptions.Timeout):
+        return "timeout"
+    if isinstance(exc, requests_mod.exceptions.ConnectionError):
+        return "connection_error"
+    return "network_error"
+
+
+# Server answers that are transient by nature and worth a retry; a final
+# answer of one of these is still returned verbatim (never converted to 0),
+# because callers treat the HTTP status as evidence.
+_RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+
+# (connect, read) ceiling. Generous read headroom for HMD's intermittent
+# mid-transfer stalls (urllib3's read timeout is an inter-byte limit, not a
+# total deadline) — still hard, and paired with bounded retries so a dead
+# connection costs at most max_attempts x timeout, never a hung run.
+DEFAULT_HTTP_TIMEOUT: tuple[float, float] = (10.0, 30.0)
+
+
 @dataclass
 class HttpFetcher:
-    """Real network fetcher. Never used by tests — fixtures stand in via a
-    fake Fetcher instead (user constraint 7: no live network in the
-    automated suite)."""
+    """Real network fetcher. Tests never touch the live network with it
+    (user constraint 7): the collector suite stands in a fake Fetcher, and
+    `tests/test_http_fetcher.py` exercises THIS class against a mocked
+    `requests.get` transport only.
+
+    Fetch policy (2026-08-29 repair of the natural-run ReadTimeout
+    failures — 24 of 27 staging runs failed with a single-attempt fetcher):
+
+    - `timeout` is (connect, read) seconds. urllib3's read timeout is an
+      inter-byte stall limit, not a total deadline: www.hmd.com answers
+      healthy requests in well under 1s (measured 2026-08-29 from the
+      staging host) but intermittently stalls responses outright, so the
+      read ceiling is generous — and still hard.
+    - Bounded retries with exponential backoff on transport failures
+      (timeouts, connection errors) and transient server statuses.
+      HMD's edge fails intermittently (successes and failures alternate
+      run to run), so one fresh attempt usually succeeds.
+    - The response BODY is downloaded inside the same try: `requests.get`
+      returns as soon as headers arrive, and `.text` streams the body —
+      a mid-transfer stall raises ReadTimeout THERE. Before this repair
+      `.text` was evaluated outside the except block, so one stalled page
+      escaped as an exception, propagated through collect(), and failed
+      the entire run (DB run_errors show the raw ReadTimeout repr, ~2m45s
+      into runs — discovery and dozens of successful product fetches lost).
+    - Exhausted transport retries -> FetchResult(status=0, error=<class>).
+      Every caller in this module treats FetchResult.status as the single
+      source of truth for "did this fetch work" (non-200 already means
+      "fall back / skip", never "abort the whole crawl" -- see
+      _parse_product's specs->base-page fallback and _sitemap_orphans'
+      warn-and-skip). status=0 is not a real HTTP status, so it always
+      fails the `== 200` checks and routes into the same fallback paths a
+      404/500 would.
+    """
 
     user_agent: str = "Mozilla/5.0 (compatible; FeaturePhoneClank/0.1; +https://github.com/)"
-    timeout: float = 15.0
-    delay_s: float = 0.3  # politeness delay between requests
+    timeout: tuple[float, float] = DEFAULT_HTTP_TIMEOUT
+    delay_s: float = 0.3  # politeness delay before every real request
+    max_attempts: int = 3
+    backoff_s: float = 2.0  # doubled per retry: 2s, 4s, ...
 
     def get(self, url: str) -> FetchResult:
         import requests
 
-        time.sleep(self.delay_s)
-        try:
-            resp = requests.get(url, headers={"User-Agent": self.user_agent}, timeout=self.timeout)
-        except requests.exceptions.RequestException as exc:
-            # Every caller in this module treats FetchResult.status as the
-            # single source of truth for "did this fetch work" (non-200
-            # already means "fall back / skip", never "abort the whole
-            # crawl" -- see _parse_product's specs->base-page fallback and
-            # _sitemap_orphans' warn-and-skip). A network-level failure
-            # (timeout, connection reset, DNS...) is the same kind of
-            # single-page problem, not a reason to lose every other
-            # already-discovered product in this run. status=0 is not a
-            # real HTTP status, so it always fails the `== 200` checks and
-            # routes into the same fallback paths a 404/500 would.
-            log.warning("hmd-nokia: network error fetching %s: %r", url, exc)
-            return FetchResult(url=url, status=0, text="")
-        return FetchResult(url=url, status=resp.status_code, text=resp.text)
+        last_error = ""
+        last_status = 0
+        for attempt in range(1, self.max_attempts + 1):
+            time.sleep(self.delay_s)
+            try:
+                resp = requests.get(
+                    url, headers={"User-Agent": self.user_agent}, timeout=self.timeout,
+                )
+                text = resp.text  # inside the try: body download is where a
+                # mid-transfer stall raises ReadTimeout (the 2026-08-29
+                # root cause — see class docstring)
+            except requests.exceptions.RequestException as exc:
+                last_error = _classify_network_error(requests, exc)
+                last_status = 0
+                log.warning(
+                    "hmd-nokia: %s fetching %s (attempt %d/%d): %r",
+                    last_error, url, attempt, self.max_attempts, exc,
+                )
+                if attempt < self.max_attempts:
+                    time.sleep(self.backoff_s * (2 ** (attempt - 1)))
+                continue
+            if resp.status_code in _RETRYABLE_STATUS and attempt < self.max_attempts:
+                last_status = resp.status_code
+                log.warning(
+                    "hmd-nokia: transient HTTP %d fetching %s (attempt %d/%d); retrying",
+                    resp.status_code, url, attempt, self.max_attempts,
+                )
+                time.sleep(self.backoff_s * (2 ** (attempt - 1)))
+                continue
+            return FetchResult(url=url, status=resp.status_code, text=text)
+        return FetchResult(url=url, status=last_status, text="", error=last_error)
 
 
 class HmdOverrides(BaseModel):
