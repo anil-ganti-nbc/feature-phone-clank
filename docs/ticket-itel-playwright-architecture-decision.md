@@ -1,8 +1,19 @@
 # Ticket: itel-india — production image architecture decision (Playwright)
 
-Status: BLOCKED from production promotion (2026-08-30 final review) on an **architectural /
-deployment-policy** decision, not collector quality. Planning artefact — decision required, no
-implementation yet.
+Status: **RESOLVED 2026-08-31 — `MOTHBALLED BY OPERATOR — PRODUCTION COST NOT JUSTIFIED`.**
+Option A rejected (image cost); Option C (dedicated browser production lane) rejected by operator;
+Option D not viable (no non-browser endpoint); Option B effectively selected, explicitly as
+mothballed/non-production rather than indefinite experimental production-intent. Collector code,
+tests and experimental-lane soak evidence (38/38) retained; itel is unscheduled and NOT
+production-eligible.
+
+Resurrection condition — reconsider only if one or more of these materially changes:
+1. itel exposes a stable first-party non-browser API/JSON surface;
+2. itel's editorial/product coverage becomes substantially more valuable;
+3. multiple valuable Clank sources require Playwright/Chromium, changing the economics of a
+   shared browser-production lane.
+
+(Original review below, retained for context.)
 
 ## Problem statement
 

@@ -24,9 +24,13 @@
 # First production runs of each BASELINE (products persist, 0 events) —
 # same suppression path as hmd-nokia's 2026-08-26 baseline (44 discovered,
 # 0 events). Not promoted, deliberately:
-#   itel-india — BLOCKED: needs the Playwright/Chromium extra, which by
-#     design only Dockerfile.experimental carries; the production image
-#     cannot execute this collector (soak itself was 38/38 ok).
+#   itel-india — MOTHBALLED 2026-08-31 by operator decision: production
+#     browser support would grow the image from ~213 MB to ~1.88 GB for the
+#     fleet's only browser-dependent collector covering ~6 products with
+#     incomplete specs — cost not justified. Collector code, tests and
+#     experimental-lane soak evidence retained; unscheduled and NOT
+#     production-eligible; resurrection only after explicit operator review
+#     (docs/ticket-itel-playwright-architecture-decision.md).
 #   lava-india — BLOCKED: 3 whole-run ReadTimeouts in 50 natural cycles
 #     (Aug 22, Aug 23, Aug 28); its local HttpFetcher predates the
 #     915f908 hmd fetcher repair (single attempt, body-read outside try).
