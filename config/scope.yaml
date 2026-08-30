@@ -37,6 +37,11 @@
 # transport failure would be an isolated per-source failed run (run() never
 # raises), never state corruption. Follow-up (out of scope here): port the
 # 915f908 repair pattern to every collector.
+# 2026-08-30 natural production proof (first scheduled cron on image 303e42f):
+# 17:15:01Z fire, status ok — all five promoted collectors ran naturally and
+# resighted cleanly (punkt 1, doro 9, mudita 2, sunbeam 30, tcl 2; hmd 44) with
+# 0 events, 0 identity anomalies, 0 failures. Zero false novelty from baseline
+# or resight behaviour. Delivery still queues pending the Discord webhook secret.
 production_collectors:
   - hmd-nokia
   - punkt-ch
