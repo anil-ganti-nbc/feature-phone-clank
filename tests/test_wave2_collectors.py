@@ -257,7 +257,14 @@ def test_wave2_sources_registered_experimental_and_production_excluded():
     from feature_phone_clank.core.scope import load_scope
 
     scope = load_scope("config/scope.yaml")
+    # doro-gb, mudita-com, sunbeam-f1-us, tcl-alcatel-global were promoted to
+    # production 2026-08-30 after natural-soak review (15/15 ok each, zero
+    # noise) — see scope.yaml notes. itel-india and lava-india remain
+    # experimental-only (playwright packaging / unrepaired fetcher).
     for sid in ("doro-gb", "mudita-com", "sunbeam-f1-us", "tcl-alcatel-global"):
+        assert sid in reg.names(), f"{sid} not registered"
+        assert sid in scope.production_collectors
+    for sid in ("itel-india", "lava-india"):
         assert sid in reg.names(), f"{sid} not registered"
         assert sid not in scope.production_collectors
 

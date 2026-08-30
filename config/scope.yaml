@@ -10,5 +10,37 @@
 # (including the Nokia 5310/230 H1 bug and the hmd-terra-m nav-link name
 # both fixed), zero smartphones or ambiguous items reach the catalogue,
 # full test suite green, run lock + catastrophic-zero guard verified.
+#
+# Five experimental-lane sources promoted 2026-08-30 after natural-run soak
+# in the separate anilganti experimental lane (image
+# feature-phone-clank-experimental:soak-local, volume
+# feature_phone_clank_experimental_data, zero events / zero notifications
+# across the entire soak — no noise ever persisted):
+#   punkt-ch            16/16 ok natural cycles since 2026-08-26 09:57Z (1 product)
+#   doro-gb             15/15 ok since 2026-08-27 00:49Z (9 products)
+#   mudita-com          15/15 ok since 2026-08-27 00:49Z (2 products)
+#   sunbeam-f1-us       15/15 ok since 2026-08-27 00:49Z (30 products)
+#   tcl-alcatel-global  15/15 ok since 2026-08-27 00:49Z (2 products)
+# First production runs of each BASELINE (products persist, 0 events) —
+# same suppression path as hmd-nokia's 2026-08-26 baseline (44 discovered,
+# 0 events). Not promoted, deliberately:
+#   itel-india — BLOCKED: needs the Playwright/Chromium extra, which by
+#     design only Dockerfile.experimental carries; the production image
+#     cannot execute this collector (soak itself was 38/38 ok).
+#   lava-india — BLOCKED: 3 whole-run ReadTimeouts in 50 natural cycles
+#     (Aug 22, Aug 23, Aug 28); its local HttpFetcher predates the
+#     915f908 hmd fetcher repair (single attempt, body-read outside try).
+#     Smallest repair: port the shared/repaired fetcher, re-soak, re-review.
+# Known accepted caveat for the five promoted sources: their local
+# HttpFetchers share the same single-attempt structure pre-repair hmd had;
+# zero transport failures observed for these five across their soaks, and a
+# transport failure would be an isolated per-source failed run (run() never
+# raises), never state corruption. Follow-up (out of scope here): port the
+# 915f908 repair pattern to every collector.
 production_collectors:
   - hmd-nokia
+  - punkt-ch
+  - doro-gb
+  - mudita-com
+  - sunbeam-f1-us
+  - tcl-alcatel-global

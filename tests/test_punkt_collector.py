@@ -241,8 +241,10 @@ def test_registered_but_absent_from_production_scope():
     from feature_phone_clank.core.scope import load_scope
 
     scope = load_scope("config/scope.yaml")
-    assert "punkt-ch" not in scope.production_collectors
-    # registration makes it runnable via run-experimental only
+    # Promoted to production 2026-08-30 after natural-soak review
+    # (16/16 ok experimental cycles, zero noise) — see scope.yaml notes.
+    assert "punkt-ch" in scope.production_collectors
+    # registration also makes it runnable via run-experimental
     from feature_phone_clank.core.registry import collectors
 
     assert "punkt-ch" in collectors.names()

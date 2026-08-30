@@ -27,12 +27,21 @@ def test_empty_scope_excludes_every_collector():
 
 def test_scope_yaml_only_lists_deliberately_promoted_collectors():
     """Every entry in config/scope.yaml must correspond to a collector that
-    actually completed its promotion review (Stage 2.1: hmd-nokia). This
+    actually completed its promotion review (Stage 2.1: hmd-nokia; 2026-08-30
+    natural-soak promotion: punkt-ch, doro-gb, mudita-com, sunbeam-f1-us,
+    tcl-alcatel-global — see the scope.yaml promotion notes). This
     intentionally does NOT assert emptiness — the whole point of the scope
     file is that it changes only via a reviewed, documented promotion, not
     that it stays empty forever."""
     scope = load_scope("config/scope.yaml")
-    reviewed_and_promoted = {"hmd-nokia"}
+    reviewed_and_promoted = {
+        "hmd-nokia",
+        "punkt-ch",
+        "doro-gb",
+        "mudita-com",
+        "sunbeam-f1-us",
+        "tcl-alcatel-global",
+    }
     assert set(scope.production_collectors) <= reviewed_and_promoted
     assert set(scope.production_collectors) == reviewed_and_promoted
 
