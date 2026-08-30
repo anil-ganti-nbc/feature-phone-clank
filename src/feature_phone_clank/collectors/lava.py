@@ -73,26 +73,101 @@ class FetchResult(BaseModel):
     url: str
     status: int
     text: str = ""
+    # Coarse transport-failure classification ("timeout", "connection_error",
+    # "network_error"); empty for any real HTTP response. Callers keep
+    # deciding on `status` alone (same contract as the 915f908 hmd repair).
+    error: str = ""
 
 
 class Fetcher(Protocol):
     def get(self, url: str) -> FetchResult: ...
 
 
+def _classify_network_error(requests_mod, exc: Exception) -> str:
+    """Coarse transport-failure classification for logs/FetchResult.error."""
+    if isinstance(exc, requests_mod.exceptions.Timeout):
+        return "timeout"
+    if isinstance(exc, requests_mod.exceptions.ConnectionError):
+        return "connection_error"
+    return "network_error"
+
+
+# Server answers that are transient by nature and worth a retry; a final
+# answer of one of these is still returned verbatim (never rewritten to 0),
+# because callers treat the HTTP status as evidence.
+_RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+
+# (connect, read) ceiling — mirrors the proven 915f908 hmd fetcher repair.
+# urllib3's read timeout is an inter-byte stall limit, not a total deadline;
+# generous-but-hard, paired with bounded retries so a dead connection costs
+# at most max_attempts x timeout, never a hung run.
+DEFAULT_HTTP_TIMEOUT: tuple[float, float] = (10.0, 30.0)
+
+
 @dataclass
 class HttpFetcher:
-    """Real network fetcher. Never used by tests (user constraint 7)."""
+    """Real network fetcher — 2026-08-30 transport repair, porting the
+    proven 915f908 hmd fetcher pattern (bounded retries, body read inside
+    the protected path, hard (10, 30)s connect/read ceiling, transport
+    classification). Lava's own pre-repair fetcher was single-attempt with
+    the body read outside any error handling: 3 of ~50 natural soak runs
+    failed whole-run with ReadTimeout on lavamobiles.com. Tests never
+    touch the live network with it (user constraint 7); mocked-transport
+    regressions live in tests/test_lava_fetcher.py.
+
+    Fetch policy (identical to hmd post-915f908):
+
+    - bounded retries with exponential backoff (2s, 4s) on transport
+      failures and transient server statuses; lavamobiles.com fails
+      intermittently run-to-run, so one fresh attempt usually succeeds;
+    - the response BODY is downloaded inside the same try (requests.get
+      returns on headers; `.text` streams the body — a mid-transfer stall
+      raises ReadTimeout there);
+    - exhausted transport retries -> FetchResult(status=0, error=<class>);
+      `status == 200` call sites route status=0 into the same skip/fallback
+      paths a 404/500 already took, so a dead page never aborts the crawl.
+    """
 
     user_agent: str = "Mozilla/5.0 (compatible; FeaturePhoneClank/0.1; +https://github.com/)"
-    timeout: float = 15.0
-    delay_s: float = 0.3
+    timeout: tuple[float, float] = DEFAULT_HTTP_TIMEOUT
+    delay_s: float = 0.3  # politeness delay before every real request
+    max_attempts: int = 3
+    backoff_s: float = 2.0  # doubled per retry: 2s, 4s, ...
 
     def get(self, url: str) -> FetchResult:
         import requests
 
-        time.sleep(self.delay_s)
-        resp = requests.get(url, headers={"User-Agent": self.user_agent}, timeout=self.timeout)
-        return FetchResult(url=url, status=resp.status_code, text=resp.text)
+        last_error = ""
+        last_status = 0
+        for attempt in range(1, self.max_attempts + 1):
+            time.sleep(self.delay_s)
+            try:
+                resp = requests.get(
+                    url, headers={"User-Agent": self.user_agent}, timeout=self.timeout,
+                )
+                text = resp.text  # inside the try: the body download is where
+                # a mid-transfer stall raises ReadTimeout (the pre-repair
+                # whole-run failure mode)
+            except requests.exceptions.RequestException as exc:
+                last_error = _classify_network_error(requests, exc)
+                last_status = 0
+                log.warning(
+                    "lava-india: %s fetching %s (attempt %d/%d): %r",
+                    last_error, url, attempt, self.max_attempts, exc,
+                )
+                if attempt < self.max_attempts:
+                    time.sleep(self.backoff_s * (2 ** (attempt - 1)))
+                continue
+            if resp.status_code in _RETRYABLE_STATUS and attempt < self.max_attempts:
+                last_status = resp.status_code
+                log.warning(
+                    "lava-india: transient HTTP %d fetching %s (attempt %d/%d); retrying",
+                    resp.status_code, url, attempt, self.max_attempts,
+                )
+                time.sleep(self.backoff_s * (2 ** (attempt - 1)))
+                continue
+            return FetchResult(url=url, status=resp.status_code, text=text)
+        return FetchResult(url=url, status=last_status, text="", error=last_error)
 
 
 def _extract_next_data(html: str) -> dict | None:
