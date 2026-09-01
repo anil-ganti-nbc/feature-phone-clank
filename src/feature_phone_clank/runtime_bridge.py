@@ -118,15 +118,38 @@ def get_identity() -> Any:
     }
 
 
-def _probe_sqlite(db_path: Path) -> tuple[bool | None, str | None, list[str]]:
-    """Return (writable, last_success_iso, reasons)."""
+def _probe_sqlite(db_path: Path) -> tuple[bool | None, str | None, list[str], Any]:
+    """Return (writable, last_success_iso, reasons, state_compatibility).
+
+    The fourth element is the read-only persistent-state compatibility
+    verdict (a StateCompatibility enum value or None when the file is
+    missing / could not be inspected). Never mutates the database."""
+    from .providers.sqlite.compatibility import (
+        EXPECTED_SCHEMA_VERSION,
+        StateCompatibility,
+        UNADMITTABLE_STATES,
+        inspect_compatibility,
+    )
+
     reasons: list[str] = []
     if not db_path.exists():
         reasons.append(f"database file missing: {db_path}")
-        return None, None, reasons
+        return None, None, reasons, None
+    compat_state = None
     try:
         con = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
         try:
+            # Read-only compatibility verdict (M14 / STD-DEPLOY-COM-002):
+            # health reports known-bad persistent state honestly instead of
+            # burying it under a generic query failure.
+            try:
+                report = inspect_compatibility(con, expected_version=EXPECTED_SCHEMA_VERSION)
+            except sqlite3.Error:
+                report = None
+            if report is not None:
+                compat_state = report.state
+                if report.state in UNADMITTABLE_STATES:
+                    reasons.append(f"persistent_state: {report.state.value} ({report.reason})")
             row = con.execute(
                 "SELECT finished_at FROM collector_runs "
                 "WHERE finished_at IS NOT NULL AND status='ok' ORDER BY id DESC LIMIT 1"
@@ -139,19 +162,21 @@ def _probe_sqlite(db_path: Path) -> tuple[bool | None, str | None, list[str]]:
             con.close()
     except sqlite3.Error as exc:
         reasons.append(f"sqlite open failed: {exc}")
-        return False, None, reasons
+        return False, None, reasons, StateCompatibility.CORRUPT
 
     parent = db_path.parent
     writable = os.access(parent, os.W_OK)
     if not writable:
         reasons.append(f"data directory not writable: {parent}")
-    return writable, last, reasons
+    return writable, last, reasons, compat_state
 
 
 def get_health(db_path: Path) -> Any:
     """Build health from process + local SQLite state only. Does not run
     collectors, does not claim Fleet or ingestion health."""
-    writable, last_success, reasons = _probe_sqlite(db_path)
+    from .providers.sqlite.compatibility import UNADMITTABLE_STATES
+
+    writable, last_success, reasons, compat_state = _probe_sqlite(db_path)
 
     if last_success is None and not reasons:
         reasons.append("no successful runs recorded yet")
@@ -161,6 +186,12 @@ def get_health(db_path: Path) -> Any:
         state = "degraded"
     if writable is False and not db_path.exists():
         state = "failed"
+    # Known-bad persistent state (unknown / corrupt / partial / newer) is
+    # degraded even though the file opens: normal work is refused at the
+    # compatibility barrier. (FRESH and MIGRATION_REQUIRED are not degraded —
+    # the store admits them via canonical bootstrap/migration.)
+    if compat_state is not None and compat_state in UNADMITTABLE_STATES:
+        state = "degraded"
 
     version_info = get_version_info()
     observed = _utc_now()

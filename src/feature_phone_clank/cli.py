@@ -4,6 +4,13 @@ test-notify | backup | continuity.
 
 All machine-consumable output is JSON printed to stdout — no command's
 contract depends on parsing human-readable text (user constraint 9).
+
+Exit codes: 0 success; 1 operational failure (health failed, no continuity
+registry, test notification not sent); 2 single-instance lock held by
+another run; 3 persistent-state compatibility refusal — the database state
+is unknown, corrupt, partial, or newer than this software understands
+(STD-DEPLOY-COM-002), normal work was refused before anything mutated, and
+the refusal JSON carries the read-only compatibility evidence.
 """
 
 from __future__ import annotations
@@ -28,6 +35,24 @@ DISCORD_WEBHOOK_ENV = "FEATURE_PHONE_CLANK_DISCORD_WEBHOOK_URL"
 
 def _resolve_webhook_url() -> str | None:
     return os.environ.get(DISCORD_WEBHOOK_ENV) or None
+
+
+def _open_state_compatible_store(db_path: str):
+    """Open a store behind the persistent-state compatibility barrier
+    (STD-DEPLOY-COM-002). Returns the store, or None after printing the
+    machine-readable refusal (exit code 3) with the read-only evidence —
+    the caller must not touch the database in that case."""
+    from .providers.sqlite import SqliteStore, StateCompatibilityError
+
+    try:
+        return SqliteStore(db_path)
+    except StateCompatibilityError as exc:
+        print(json.dumps({
+            "status": "state_incompatible",
+            "gate": "persistent_state_compatibility",
+            **exc.report.as_evidence(),
+        }, indent=2, default=str))
+        return None
 
 
 def cmd_version(args: argparse.Namespace) -> int:
@@ -63,7 +88,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     from .core.qualification import QualificationProvenance
     from .core.scope import load_scope
     from .providers.discord import DiscordNotifier
-    from .providers.sqlite import SqliteStore
 
     scope = load_scope(args.scope)
     if not scope.production_collectors:
@@ -82,7 +106,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             print(json.dumps({"status": "locked", "message": str(e)}, indent=2))
             return 2
 
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        if lock is not None:
+            lock.release()
+        return 3
     notifier = DiscordNotifier(store, _resolve_webhook_url())
     results = []
     try:
@@ -131,7 +159,6 @@ def cmd_run_experimental(args: argparse.Namespace) -> int:
     from .core.runner import run_experimental
     from .core.qualification import QualificationProvenance
     from .core.scope import load_scope
-    from .providers.sqlite import SqliteStore
 
     scope = load_scope(args.scope)
     all_experimental = [name for name in collectors.names() if name not in scope.production_collectors]
@@ -145,7 +172,11 @@ def cmd_run_experimental(args: argparse.Namespace) -> int:
             print(json.dumps({"status": "locked", "message": str(e)}, indent=2))
             return 2
 
-    store = SqliteStore(args.experimental_db)
+    store = _open_state_compatible_store(args.experimental_db)
+    if store is None:
+        if lock is not None:
+            lock.release()
+        return 3
     results = []
     try:
         for source_key in requested:
@@ -180,12 +211,12 @@ def cmd_run_experimental(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    from .providers.sqlite import SqliteStore
-
     if not Path(args.db).exists():
         print(json.dumps({"status": "no_database", "runs": []}, indent=2))
         return 0
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         rows = [dict(r) for r in store.recent_runs(args.limit)]
     finally:
@@ -198,12 +229,12 @@ def cmd_events(args: argparse.Namespace) -> int:
     """Machine-readable recent-event listing (brief section 18 / Unified
     Clank compatibility) — structured JSON, no network API, no delivery
     concept at all."""
-    from .providers.sqlite import SqliteStore
-
     if not Path(args.db).exists():
         print(json.dumps({"status": "no_database", "events": []}, indent=2))
         return 0
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         rows = store.recent_events(
             source_key=args.source, limit=args.limit, min_alert_level=args.min_alert_level,
@@ -231,7 +262,6 @@ def cmd_report(args: argparse.Namespace) -> int:
 
     from . import runtime_bridge
     from .paths import resolve_data_path
-    from .providers.sqlite import SqliteStore
 
     if not Path(args.db).exists():
         print(json.dumps({"status": "no_database"}, indent=2))
@@ -240,7 +270,9 @@ def cmd_report(args: argparse.Namespace) -> int:
     db_path = resolve_data_path(args.db)
     health = runtime_bridge.as_jsonable(runtime_bridge.get_health(db_path))
     version_info = runtime_bridge.get_version_info()
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         report = store.soak_report(args.source, since)
     finally:
@@ -277,12 +309,13 @@ def cmd_deliver(args: argparse.Namespace) -> int:
     Discord outage or a config fix can be retried standalone without
     re-running collectors."""
     from .providers.discord import DiscordNotifier
-    from .providers.sqlite import SqliteStore
 
     if not Path(args.db).exists():
         print(json.dumps({"status": "no_database"}, indent=2))
         return 0
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         if args.requeue_failed:
             n = store.requeue_failed_notifications("discord")
@@ -299,12 +332,12 @@ def cmd_notifications(args: argparse.Namespace) -> int:
     """Inspect the notification outbox without touching SQLite directly
     (brief section 10/12): counts by status, plus recent rows for a given
     status."""
-    from .providers.sqlite import SqliteStore
-
     if not Path(args.db).exists():
         print(json.dumps({"status": "no_database", "counts": {}}, indent=2))
         return 0
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         counts = store.notification_counts("discord")
         rows = []
@@ -327,7 +360,6 @@ def cmd_test_notify(args: argparse.Namespace) -> int:
     resolved webhook isn't overridden with --webhook, so a real production
     channel is never contacted by accident."""
     from .providers.discord import DiscordNotifier
-    from .providers.sqlite import SqliteStore
 
     webhook = args.webhook or _resolve_webhook_url()
     if webhook and not args.webhook and not args.confirm_production:
@@ -339,7 +371,9 @@ def cmd_test_notify(args: argparse.Namespace) -> int:
         }, indent=2))
         return 1
 
-    store = SqliteStore(args.db)
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
     try:
         notifier = DiscordNotifier(store, webhook)
         result = notifier.enqueue_test(note=args.note or "")
@@ -360,7 +394,6 @@ def cmd_backup(args: argparse.Namespace) -> int:
 
     from .core.run_lock import LockError, RunLock
     from .paths import resolve_data_path
-    from .providers.sqlite import SqliteStore
 
     db_path = resolve_data_path(args.db)
     if not Path(db_path).exists():
@@ -377,7 +410,9 @@ def cmd_backup(args: argparse.Namespace) -> int:
 
     store = None
     try:
-        store = SqliteStore(str(db_path))
+        store = _open_state_compatible_store(str(db_path))
+        if store is None:
+            return 3
         result = store.backup_to(args.output, overwrite=args.force)
         continuity_src = Path(db_path).parent / "continuity" / "continuity-events.jsonl"
         if continuity_src.exists():

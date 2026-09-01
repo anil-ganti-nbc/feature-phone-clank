@@ -75,9 +75,75 @@ CREATE INDEX IF NOT EXISTS idx_qc_reviews_decided_at ON qc_reviews(decided_at);
 CREATE INDEX IF NOT EXISTS idx_qc_reviews_source ON qc_reviews(source_key, decided_at);
 """
 
+# M14 / STD-DEPLOY-COM-002: the QC archive is durable editorial evidence in
+# its own SQLite file, so opening it crosses its own (smaller) compatibility
+# barrier. This store has no version history — exactly one schema shape has
+# ever existed — so its contract is "exact known shape", checked read-only
+# against table_info: a fresh file bootstraps canonically, a file whose
+# qc_reviews matches the expected column set is compatible (this is what
+# grandfathers every archive written before M14), and anything else —
+# different shape, foreign tables, corruption — is refused with evidence
+# rather than silently half-updated by CREATE TABLE IF NOT EXISTS.
+_QC_EXPECTED_COLUMNS = frozenset({
+    "id", "event_id", "source_key", "product_key", "manufacturer",
+    "model", "model_number", "url", "event_type", "changed_fields_json",
+    "meta_json", "detected_at", "run_id", "run_started_at", "decision",
+    "reason", "decided_at", "is_corrected", "review_metadata_json",
+})
+
 
 class InvalidDecisionError(ValueError):
     """Raised when a decision outside DECISIONS is submitted."""
+
+
+class QcStateCompatibilityError(RuntimeError):
+    """Raised when the QC archive's persistent state is refused. `.evidence`
+    carries the read-only facts; the file was not mutated by the refusal."""
+
+    def __init__(self, evidence: dict) -> None:
+        super().__init__(
+            "QC archive persistent-state compatibility refused: "
+            f"{evidence.get('reason', 'unknown reason')} — normal work was "
+            f"not admitted; the file was left untouched for diagnosis"
+        )
+        self.evidence = evidence
+
+
+def _inspect_qc_state(con) -> tuple[str, str, dict]:
+    """Read-only verdict for the QC archive: FRESH / COMPATIBLE / refusal
+    state, a human reason, and evidence. Never mutates the database."""
+    try:
+        quick = con.execute("PRAGMA quick_check").fetchone()[0]
+        if quick != "ok":
+            return "CORRUPT", f"quick_check reported {quick!r}", {"quick_check": str(quick)}
+        tables = {
+            row[0] for row in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name NOT LIKE 'sqlite_%'"
+            )
+        }
+    except sqlite3.DatabaseError as exc:
+        return "CORRUPT", f"not a usable SQLite database: {exc}", {"sqlite_error": str(exc)}
+    if not tables:
+        return "FRESH", "no persistent state yet; canonical bootstrap may create it", {}
+    if "qc_reviews" not in tables:
+        return (
+            "UNKNOWN",
+            f"existing database has {len(tables)} table(s) but no qc_reviews "
+            f"archive table; it is not fresh and must not be bootstrapped",
+            {"user_tables": sorted(tables)},
+        )
+    columns = {row[1] for row in con.execute("PRAGMA table_info(qc_reviews)")}
+    if columns == _QC_EXPECTED_COLUMNS:
+        return "COMPATIBLE", "qc_reviews matches the expected archive shape", {}
+    missing = sorted(_QC_EXPECTED_COLUMNS - columns)
+    extra = sorted(columns - _QC_EXPECTED_COLUMNS)
+    return (
+        "INCOMPATIBLE",
+        "qc_reviews shape differs from the expected archive shape "
+        f"(missing: {missing}; unexpected: {extra})",
+        {"missing_columns": missing, "unexpected_columns": extra},
+    )
 
 
 class QcArchiveStore:
@@ -87,12 +153,30 @@ class QcArchiveStore:
             Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.db_path)
         self.db.row_factory = sqlite3.Row
+        # Inspect BEFORE any connection-level PRAGMA: a refused file (e.g. a
+        # non-database file the WAL pragma would choke on) is closed with a
+        # read-only evidence record and never touched further.
+        state, reason, evidence = _inspect_qc_state(self.db)
+        if state not in ("FRESH", "COMPATIBLE"):
+            self.db.close()
+            raise QcStateCompatibilityError({
+                **evidence, "compatibility_state": state, "reason": reason,
+            })
         try:
             self.db.execute("PRAGMA journal_mode=WAL")
         except sqlite3.OperationalError:
             pass
-        self.db.executescript(_SCHEMA)
-        self.db.commit()
+        if state == "FRESH":
+            self.db.executescript(_SCHEMA)
+            self.db.commit()
+            state, reason, post = _inspect_qc_state(self.db)
+            evidence.update(post)
+            if state != "COMPATIBLE":
+                self.db.close()
+                raise QcStateCompatibilityError({
+                    **evidence, "compatibility_state": state,
+                    "reason": f"bootstrap did not produce the expected archive shape: {reason}",
+                })
 
     def close(self) -> None:
         self.db.close()

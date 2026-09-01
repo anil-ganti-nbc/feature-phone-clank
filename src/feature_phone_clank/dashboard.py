@@ -45,11 +45,49 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 from .paths import resolve_data_path
-from .providers.sqlite import SqliteStore
-from .providers.qc_store import DECISIONS, QcArchiveStore
+from .providers.sqlite import SqliteStore, StateCompatibilityError
+from .providers.qc_store import DECISIONS, QcArchiveStore, QcStateCompatibilityError
 from .runtime_bridge import get_version_info
 
 DEFAULT_QC_DB = "data/feature_phone_clank_qc.db"
+
+# M14 / STD-DEPLOY-COM-002: both stores sit behind persistent-state
+# compatibility gates. When either refuses, every surface here returns
+# evidence identifying compatibility gating as the reason — the dashboard
+# never renders partial data from a state it could not verify, and never
+# mutates an unverified store.
+_STATE_GATE_ERRORS = (StateCompatibilityError, QcStateCompatibilityError)
+
+
+def _gate_evidence(exc) -> dict:
+    evidence = (
+        exc.report.as_evidence() if isinstance(exc, StateCompatibilityError)
+        else dict(exc.evidence)
+    )
+    evidence["error"] = "state_incompatible"
+    evidence["gate"] = "persistent_state_compatibility"
+    return evidence
+
+
+def _refusal_page(evidence: dict) -> str:
+    rows = "".join(
+        f"<tr><td>{e(k)}</td><td><code>{e(v)}</code></td></tr>"
+        for k, v in sorted(evidence.items()) if v is not None
+    )
+    return (
+        '<!doctype html><html><head><meta charset=utf-8>'
+        '<title>Feature Phone Clank — state refused</title>'
+        '<style>body{font:14px/1.5 -apple-system,Segoe UI,sans-serif;background:#08111d;'
+        'color:#e9eef7;padding:32px}h1{font-size:18px}table{border-collapse:collapse;'
+        'margin-top:12px}td,th{border:1px solid #26374d;padding:6px 10px;font-size:12px;'
+        'text-align:left}th{color:#9baac0}code{color:#f7bd48}</style></head><body>'
+        '<h1>⚠ Persistent-state compatibility refused</h1>'
+        '<p>Normal work was not admitted: the database state did not match the contract '
+        'this build expects (STD-DEPLOY-COM-002). Nothing was modified — the state is '
+        'preserved for diagnosis.</p>'
+        f'<table><tr><th>fact</th><th>value</th></tr>{rows}</table>'
+        '</body></html>'
+    )
 
 def e(x): return html.escape("" if x is None else str(x))
 def a(url): return f'<a href="{e(url)}" target=_blank rel=noreferrer>Source ↗</a>' if url else '—'
@@ -233,7 +271,15 @@ def serve(host='127.0.0.1',port=8400,controller=None):
             if path != '/':
                 self.send_error(404)
                 return
-            body = render(db,controller,qc_db=qc_db).encode()
+            try:
+                body = render(db,controller,qc_db=qc_db).encode()
+            except _STATE_GATE_ERRORS as exc:
+                body = _refusal_page(_gate_evidence(exc)).encode()
+                self.send_response(503)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+                self.wfile.write(body)
+                return
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
@@ -273,7 +319,11 @@ def serve(host='127.0.0.1',port=8400,controller=None):
                 reason = body.get('reason')
                 if decision not in DECISIONS:
                     self._send_json(400, {'error': 'invalid_decision', 'allowed': sorted(DECISIONS)}); return
-                store = SqliteStore(str(db))
+                store = None
+                try:
+                    store = SqliteStore(str(db))
+                except _STATE_GATE_ERRORS as exc:
+                    self._send_json(503, _gate_evidence(exc)); return
                 try:
                     row = store.db.execute(
                         "SELECT e.*, p.product_key, p.manufacturer, p.model, p.model_number, p.url "
@@ -287,7 +337,10 @@ def serve(host='127.0.0.1',port=8400,controller=None):
                     ).fetchone()
                 finally:
                     store.close()
-                qc_store = QcArchiveStore(str(qc_db))
+                try:
+                    qc_store = QcArchiveStore(str(qc_db))
+                except _STATE_GATE_ERRORS as exc:
+                    self._send_json(503, _gate_evidence(exc)); return
                 try:
                     result = qc_store.submit_review(
                         event_id=row['id'], source_key=row['collector'], event_type=row['event_type'],

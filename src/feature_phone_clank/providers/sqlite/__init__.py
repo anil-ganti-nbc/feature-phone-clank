@@ -1,5 +1,13 @@
-"""SQLite provider: schema lifecycle + product/observation/event
-persistence + run telemetry.
+"""SQLite provider: state-compatibility barrier + schema lifecycle +
+product/observation/event persistence + run telemetry.
+
+Construction of `SqliteStore` is the persistent-state compatibility
+barrier (M14 / STD-DEPLOY-COM-002): the database is adjudicated read-only
+by `compatibility.inspect_compatibility` before anything mutates; only
+FRESH state bootstraps and known-older state migrates, both through the
+canonical mechanism here, and both are re-verified before the store is
+admitted. Unknown, corrupt, partial, and newer-than-expected state raise
+`StateCompatibilityError` with full evidence and are left untouched.
 
 Stage 3 adds deterministic diff/event generation (`core/diff.py` +
 `core/pipeline.py`); this module only gained the storage primitives those
@@ -17,10 +25,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ...core.models import Discovery, Event
+from .compatibility import (
+    EXPECTED_SCHEMA_VERSION,
+    UNADMITTABLE_STATES,
+    CompatibilityReport,
+    StateCompatibility,
+    StateCompatibilityError,
+    inspect_compatibility,
+)
 
 _SCHEMA = (Path(__file__).parent / "schema.sql").read_text(encoding="utf-8")
 
-SCHEMA_VERSION = 5
+# The expected persistent-state contract lives in compatibility.py (one
+# authority shared by the schema, the migrations, and the compatibility
+# gate); re-exported here under the historical name.
+SCHEMA_VERSION = EXPECTED_SCHEMA_VERSION
 # Future incremental migrations for databases created at an earlier version.
 # Fresh databases get schema.sql directly and record all versions at once —
 # same idempotent pattern as OEM Radar's sqlite provider.
@@ -92,6 +111,23 @@ class SqliteStore:
         self.db_path = db_path
         if db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        # Phase 1 — read-only inspection before any read-write handle exists.
+        # A refused state is left byte-identical: not even the WAL pragma
+        # touches it. (mode=ro cannot open a not-yet-existing file, and can
+        # fail on a hot WAL needing recovery; both fall through to the
+        # historical read-write open, which remains adjudicated in phase 2.)
+        pre_report: CompatibilityReport | None = None
+        if db_path != ":memory:" and Path(db_path).exists():
+            try:
+                ro = sqlite3.connect(f"file:{Path(db_path).as_posix()}?mode=ro", uri=True)
+                try:
+                    pre_report = inspect_compatibility(ro, expected_version=SCHEMA_VERSION)
+                finally:
+                    ro.close()
+            except sqlite3.Error:
+                pre_report = None
+        if pre_report is not None and pre_report.state in UNADMITTABLE_STATES:
+            raise StateCompatibilityError(pre_report)
         self.db = sqlite3.connect(db_path)
         self.db.row_factory = sqlite3.Row
         try:
@@ -99,45 +135,97 @@ class SqliteStore:
         except sqlite3.OperationalError:
             pass  # some filesystems (network mounts) can't do WAL; default journal is fine
         self.db.execute("PRAGMA foreign_keys=ON")
-        self.migrate()
+        self._admit_compatibility(pre_report)
 
-    # -- lifecycle ------------------------------------------------------
+    # -- compatibility barrier (M14 / STD-DEPLOY-COM-002) ----------------
+    #
+    # Construction is the barrier: normal work cannot begin on this store
+    # until the persistent state has been adjudicated against the expected
+    # contract. Inspection is read-only; mutation happens only after an
+    # explicit compatibility decision (fresh bootstrap or canonical
+    # migration), and the result is re-verified before the store is usable.
+    # Every incompatible verdict raises StateCompatibilityError with the
+    # full read-only evidence — the database is never deleted, stamped, or
+    # silently upgraded, and unadmittable state can never be laundered into
+    # "current" by opening it.
 
-    def migrate(self) -> None:
-        """Idempotent: safe to call on every startup, fresh DB or existing.
-
-        For an existing database, incremental `_MIGRATIONS` (plain ALTER
-        TABLE statements) must run BEFORE `executescript(_SCHEMA)` — not
-        after. `schema.sql` is written as the current version's full,
-        final shape (e.g. `CREATE UNIQUE INDEX ... ON events(dedup_key)`),
-        so running it against an older table that doesn't have that column
-        yet fails outright. Only a genuinely fresh database can safely take
-        `_SCHEMA` first, because it creates every table at the current
-        version directly."""
-        fresh = self.db.execute(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'"
-        ).fetchone() is None
-        if fresh:
-            self.db.executescript(_SCHEMA)  # CREATE TABLE IF NOT EXISTS throughout
-            for v in range(1, SCHEMA_VERSION + 1):
-                self.db.execute(
-                    "INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (v,)
-                )
+    def _admit_compatibility(self, pre_report: CompatibilityReport | None) -> None:
+        if pre_report is not None:
+            report = pre_report
         else:
-            current = self.db.execute(
-                "SELECT COALESCE(MAX(version), 0) v FROM schema_migrations"
-            ).fetchone()["v"]
-            for v in range(current + 1, SCHEMA_VERSION + 1):
+            report = inspect_compatibility(self.db, expected_version=SCHEMA_VERSION)
+        if report.state is StateCompatibility.COMPATIBLE:
+            self.compatibility_report = report
+            return
+        failure: str | None = None
+        try:
+            if report.state is StateCompatibility.FRESH:
+                self._bootstrap_fresh()
+            elif report.state is StateCompatibility.MIGRATION_REQUIRED:
+                self._migrate_incremental(report.observed_version)
+            # every other state falls through to the refusal below
+        except sqlite3.Error as exc:
+            failure = f"{type(exc).__name__}: {exc}"
+        post = self._post_admission_report(failure)
+        if post.state is StateCompatibility.COMPATIBLE:
+            self.compatibility_report = post
+            return
+        self.db.close()
+        raise StateCompatibilityError(post)
+
+    def _post_admission_report(self, failure: str | None) -> CompatibilityReport:
+        """Re-verify after any mutating admission step (or after its
+        failure). A bootstrap/migration that did not actually produce
+        compatible state must not mark the state ready."""
+        try:
+            post = inspect_compatibility(self.db, expected_version=SCHEMA_VERSION)
+        except sqlite3.Error as exc:
+            post = CompatibilityReport(
+                state=StateCompatibility.CORRUPT,
+                expected_version=SCHEMA_VERSION,
+                observed_version=None,
+                reason=f"post-admission inspection failed: {exc}",
+            )
+        if failure:
+            post.evidence["admission_failure"] = failure
+        return post
+
+    def _bootstrap_fresh(self) -> None:
+        """Canonical fresh-state bootstrap: the current full schema, then
+        the version marker stamped 1..N at once (the historical, documented
+        fresh-database path)."""
+        self.db.executescript(_SCHEMA)  # CREATE TABLE IF NOT EXISTS throughout
+        for v in range(1, SCHEMA_VERSION + 1):
+            self.db.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (v,)
+            )
+        self.db.commit()
+
+    def _migrate_incremental(self, from_version: int) -> None:
+        """Canonical forward-only migration of known-older state, in one
+        transaction so a failure mid-way leaves the state exactly as it was
+        (still MIGRATION_REQUIRED, never half-stamped), followed by the
+        idempotent current-schema finalize the historical migrate() always
+        applied."""
+        try:
+            self.db.execute("BEGIN IMMEDIATE")
+            for v in range(from_version + 1, SCHEMA_VERSION + 1):
                 for stmt in _MIGRATIONS.get(v, []):
                     self.db.execute(stmt)
-                self.db.execute("INSERT INTO schema_migrations(version) VALUES (?)", (v,))
-            # Now safe: every column schema.sql's CREATE TABLE/INDEX
-            # statements reference has just been added by the ALTER TABLEs
-            # above. Idempotent (IF NOT EXISTS throughout) — also picks up
-            # any brand-new table a future version adds without its own
-            # migration entry.
-            self.db.executescript(_SCHEMA)
+                self.db.execute(
+                    "INSERT INTO schema_migrations(version) VALUES (?)", (v,)
+                )
+            self.db.commit()
+        except sqlite3.Error:
+            self.db.rollback()
+            raise
+        # Now safe: every column schema.sql's CREATE TABLE/INDEX statements
+        # reference has just been added by the ALTER TABLEs above.
+        # Idempotent (IF NOT EXISTS throughout).
+        self.db.executescript(_SCHEMA)
         self.db.commit()
+
+    # -- lifecycle ------------------------------------------------------
 
     def schema_version(self) -> int:
         return self.db.execute(

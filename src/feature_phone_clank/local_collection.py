@@ -122,7 +122,7 @@ class LocalCollectionController:
     def _run_all_production(self, sources: list[str]) -> None:
         from .core.run_lock import LockError, RunLock
         from .core.scope import load_scope
-        from .providers.sqlite import SqliteStore
+        from .providers.sqlite import SqliteStore, StateCompatibilityError
 
         try:
             lock = RunLock.acquire(self.lock_path)
@@ -138,6 +138,16 @@ class LocalCollectionController:
             scope = load_scope(self.scope_path)
             for sk in sources:
                 self._run_single(sk, "production", store, scope)
+        except StateCompatibilityError as exc:
+            # Persistent-state gate (STD-DEPLOY-COM-002): the lock grant
+            # admitted the process, but the state contract did not admit
+            # normal work. Record the compatibility evidence per source —
+            # the refusal itself must be the durable explanation.
+            for sk in sources:
+                self._set(sk, "production", state="blocked",
+                          message=f"persistent-state compatibility refused: {exc}",
+                          result=exc.report.as_evidence(),
+                          finished_at=datetime.now(timezone.utc).isoformat())
         finally:
             if store is not None:
                 store.close()
@@ -146,7 +156,7 @@ class LocalCollectionController:
     def _run_one(self, source_key: str, mode: str) -> None:
         from .core.run_lock import LockError, RunLock
         from .core.scope import load_scope
-        from .providers.sqlite import SqliteStore
+        from .providers.sqlite import SqliteStore, StateCompatibilityError
 
         lock_path = self.lock_path if mode == "production" else self.experimental_lock_path
         db_path = self.database if mode == "production" else self.experimental_db
@@ -162,6 +172,14 @@ class LocalCollectionController:
             store = SqliteStore(str(db_path))
             scope = load_scope(self.scope_path) if mode == "production" else None
             self._run_single(source_key, mode, store, scope)
+        except StateCompatibilityError as exc:
+            # See _run_all_production: lock ownership never satisfies the
+            # state-compatibility barrier; a valid lock cannot open
+            # incompatible state, and the refusal is recorded as evidence.
+            self._set(source_key, mode, state="blocked",
+                      message=f"persistent-state compatibility refused: {exc}",
+                      result=exc.report.as_evidence(),
+                      finished_at=datetime.now(timezone.utc).isoformat())
         finally:
             if store is not None:
                 store.close()
