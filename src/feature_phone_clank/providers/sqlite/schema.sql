@@ -77,9 +77,51 @@ CREATE TABLE IF NOT EXISTS collector_runs (
     status TEXT NOT NULL DEFAULT 'running',  -- running | ok | failed | blocked_zero_result | out_of_scope
     products_observed INTEGER,
     previous_products_observed INTEGER,
-    stats_json TEXT NOT NULL DEFAULT '{}'
+    stats_json TEXT NOT NULL DEFAULT '{}',
+    provenance TEXT NOT NULL DEFAULT 'UNKNOWN',
+    qualification_scope TEXT,
+    qualification_epoch_id INTEGER,
+    qualification_material_identity TEXT,
+    qualification_gate_status TEXT NOT NULL DEFAULT 'UNKNOWN'
 );
 CREATE INDEX IF NOT EXISTS idx_runs_source ON collector_runs(source_key, started_at);
+
+-- Qualification evidence is deliberately separate from the continuity/data-
+-- loss registry.  Epoch rows are append-only lineage; the current row per
+-- scope is held in qualification_state.  A reset and a terminal fact are
+-- independent rows so a changed execution cannot consume the same evidence
+-- slot as its terminal record.
+CREATE TABLE IF NOT EXISTS qualification_state (
+    scope_key TEXT PRIMARY KEY,
+    epoch_id INTEGER NOT NULL,
+    material_identity TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS qualification_epochs (
+    id INTEGER PRIMARY KEY,
+    scope_key TEXT NOT NULL,
+    material_identity TEXT NOT NULL,
+    prior_material_identity TEXT,
+    reset_reason TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(scope_key, id)
+);
+CREATE INDEX IF NOT EXISTS idx_qualification_epochs_scope ON qualification_epochs(scope_key, id);
+CREATE TABLE IF NOT EXISTS qualification_events (
+    id INTEGER PRIMARY KEY,
+    run_id INTEGER REFERENCES collector_runs(id),
+    scope_key TEXT NOT NULL,
+    epoch_id INTEGER NOT NULL REFERENCES qualification_epochs(id),
+    event_type TEXT NOT NULL, -- RESET | TERMINAL
+    provenance TEXT NOT NULL DEFAULT 'UNKNOWN',
+    material_identity TEXT NOT NULL,
+    prior_material_identity TEXT,
+    status TEXT,
+    counts_for_qualification INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(run_id, event_type)
+);
+CREATE INDEX IF NOT EXISTS idx_qualification_events_scope ON qualification_events(scope_key, epoch_id, event_type);
 
 CREATE TABLE IF NOT EXISTS run_errors (
     id INTEGER PRIMARY KEY,

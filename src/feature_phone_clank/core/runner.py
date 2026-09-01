@@ -24,6 +24,10 @@ from .collector_base import BaseCollector
 from .models import CollectorRunResult
 from .pipeline import compute_classification_transitions, process_run
 from .scope import ScopeConfig, is_production
+from .qualification import (
+    QualificationProvenance, material_identity, normalize_provenance,
+    prepare as prepare_qualification, finish as finish_qualification,
+)
 
 log = logging.getLogger("feature_phone_clank.runner")
 
@@ -36,7 +40,7 @@ class ScopeError(Exception):
 def run_production_collector(
     collector: BaseCollector, store, scope: ScopeConfig,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
-    notifier=None,
+    notifier=None, provenance: QualificationProvenance | str = QualificationProvenance.SCHEDULED,
 ) -> tuple[CollectorRunResult, dict]:
     if not is_production(collector.source_key, scope):
         raise ScopeError(
@@ -45,13 +49,15 @@ def run_production_collector(
             f"Use run_experimental() for unapproved collectors."
         )
     return _run(collector, store, manufacturer=manufacturer, source_type=source_type,
-                region=region, base_url=base_url, notifier=notifier)
+                region=region, base_url=base_url, notifier=notifier,
+                provenance=provenance, scope_mode="production",
+                material_inputs={"production_collectors": sorted(scope.production_collectors)})
 
 
 def run_experimental(
     collector: BaseCollector, store,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
-    notifier=None,
+    notifier=None, provenance: QualificationProvenance | str = QualificationProvenance.UNKNOWN,
 ) -> tuple[CollectorRunResult, dict]:
     """Run a collector not (yet) approved for production. Caller is
     responsible for passing a throwaway store (e.g. `SqliteStore(":memory:")`)
@@ -59,13 +65,15 @@ def run_experimental(
     let an experimental collector run somewhere that isn't the production
     database."""
     return _run(collector, store, manufacturer=manufacturer, source_type=source_type,
-                region=region, base_url=base_url, notifier=notifier)
+                region=region, base_url=base_url, notifier=notifier,
+                provenance=provenance, scope_mode="experimental")
 
 
 def _run(
     collector: BaseCollector, store,
     *, manufacturer: str, source_type: str, region: str | None, base_url: str,
-    notifier=None,
+    notifier=None, provenance: QualificationProvenance | str = QualificationProvenance.UNKNOWN,
+    scope_mode: str = "source", material_inputs: dict | None = None,
 ) -> tuple[CollectorRunResult, dict]:
     source_id = store.ensure_source(
         collector.source_key, manufacturer, source_type, region, base_url, {}
@@ -75,7 +83,30 @@ def _run(
 
     is_baseline = previous_count is None
 
-    run_id = store.run_started(collector.source_key)
+    scope_key = f"{scope_mode}:{collector.source_key}"
+    material_basis = {
+        "target": "feature-phone-clank",
+        "collector": collector.__class__.__module__ + "." + collector.__class__.__qualname__,
+        "source_key": collector.source_key,
+        "manufacturer": manufacturer,
+        "source_type": source_type,
+        "region": region,
+        "base_url": base_url,
+        "scope_mode": scope_mode,
+        "qualification_policy": "feature-phone-qualification-v1",
+    }
+    if material_inputs:
+        material_basis["execution_configuration"] = material_inputs
+    material = material_identity(material_basis)
+    provenance_value = normalize_provenance(provenance)
+    run_id = store.run_started(
+        collector.source_key, provenance=provenance_value,
+        qualification_scope=scope_key,
+    )
+    qualification = prepare_qualification(
+        store, run_id=run_id, scope_key=scope_key, material=material,
+        provenance=provenance_value,
+    )
     result, discoveries = collector.run()  # never raises — see BaseCollector.run()
 
     # Must run BEFORE classification_log is upserted below — it reads the
@@ -108,6 +139,7 @@ def _run(
             run_id, "failed", {"discovered": 0}, result.errors,
             products_observed=None, previous_products_observed=previous_count,
         )
+        finish_qualification(store, qualification, "failed")
         return result, {"status": "failed"}
 
     _persist_classification_log()
@@ -122,6 +154,7 @@ def _run(
             run_id, "blocked_zero_result", {"discovered": 0}, [reason],
             products_observed=0, previous_products_observed=previous_count,
         )
+        finish_qualification(store, qualification, "blocked_zero_result")
         return result, {"status": "blocked_zero_result", "reason": reason}
 
     stats = process_run(
@@ -133,4 +166,5 @@ def _run(
         run_id, "ok", stats, result.errors,
         products_observed=n, previous_products_observed=previous_count,
     )
+    finish_qualification(store, qualification, "ok")
     return result, stats

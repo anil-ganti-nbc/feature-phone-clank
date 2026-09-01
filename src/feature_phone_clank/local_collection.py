@@ -170,6 +170,7 @@ class LocalCollectionController:
     def _run_single(self, source_key: str, mode: str, store, scope) -> None:
         from .core.registry import collectors
         from .core.runner import ScopeError, run_experimental, run_production_collector
+        from .core.qualification import QualificationProvenance
 
         self._set(
             source_key, mode, state="running",
@@ -189,9 +190,11 @@ class LocalCollectionController:
                 base_url=getattr(collector, "base_url", ""),
             )
             if mode == "production":
-                result, stats = run_production_collector(collector, store, scope, **kwargs)
+                result, stats = run_production_collector(
+                    collector, store, scope, provenance=QualificationProvenance.MANUAL, **kwargs)
             else:
-                result, stats = run_experimental(collector, store, **kwargs)
+                result, stats = run_experimental(
+                    collector, store, provenance=QualificationProvenance.TEST, **kwargs)
             state = (
                 "success" if result.status != "failed" and stats.get("status") != "blocked_zero_result"
                 else ("blocked" if stats.get("status") == "blocked_zero_result" else "failed")

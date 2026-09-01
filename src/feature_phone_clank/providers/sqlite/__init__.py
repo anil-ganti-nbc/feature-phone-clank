@@ -20,7 +20,7 @@ from ...core.models import Discovery, Event
 
 _SCHEMA = (Path(__file__).parent / "schema.sql").read_text(encoding="utf-8")
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 # Future incremental migrations for databases created at an earlier version.
 # Fresh databases get schema.sql directly and record all versions at once —
 # same idempotent pattern as OEM Radar's sqlite provider.
@@ -47,6 +47,29 @@ _MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE events ADD COLUMN dedup_key TEXT",
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_events_dedup ON events(dedup_key) "
         "WHERE dedup_key IS NOT NULL",
+    ],
+    5: [
+        "ALTER TABLE collector_runs ADD COLUMN provenance TEXT NOT NULL DEFAULT 'UNKNOWN'",
+        "ALTER TABLE collector_runs ADD COLUMN qualification_scope TEXT",
+        "ALTER TABLE collector_runs ADD COLUMN qualification_epoch_id INTEGER",
+        "ALTER TABLE collector_runs ADD COLUMN qualification_material_identity TEXT",
+        "ALTER TABLE collector_runs ADD COLUMN qualification_gate_status TEXT NOT NULL DEFAULT 'UNKNOWN'",
+        "CREATE TABLE IF NOT EXISTS qualification_state ("
+        "scope_key TEXT PRIMARY KEY, epoch_id INTEGER NOT NULL, "
+        "material_identity TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now'))) ",
+        "CREATE TABLE IF NOT EXISTS qualification_epochs ("
+        "id INTEGER PRIMARY KEY, scope_key TEXT NOT NULL, material_identity TEXT NOT NULL, "
+        "prior_material_identity TEXT, reset_reason TEXT, "
+        "created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(scope_key, id))",
+        "CREATE INDEX IF NOT EXISTS idx_qualification_epochs_scope ON qualification_epochs(scope_key, id)",
+        "CREATE TABLE IF NOT EXISTS qualification_events ("
+        "id INTEGER PRIMARY KEY, run_id INTEGER REFERENCES collector_runs(id), "
+        "scope_key TEXT NOT NULL, epoch_id INTEGER NOT NULL REFERENCES qualification_epochs(id), "
+        "event_type TEXT NOT NULL, provenance TEXT NOT NULL DEFAULT 'UNKNOWN', "
+        "material_identity TEXT NOT NULL, prior_material_identity TEXT, status TEXT, "
+        "counts_for_qualification INTEGER NOT NULL DEFAULT 0, "
+        "created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(run_id, event_type))",
+        "CREATE INDEX IF NOT EXISTS idx_qualification_events_scope ON qualification_events(scope_key, epoch_id, event_type)",
     ],
 }
 
@@ -450,10 +473,13 @@ class SqliteStore:
 
     # -- run telemetry --------------------------------------------------
 
-    def run_started(self, source_key: str) -> int:
+    def run_started(
+        self, source_key: str, *, provenance: str = "UNKNOWN",
+        qualification_scope: str | None = None,
+    ) -> int:
         cur = self.db.execute(
-            "INSERT INTO collector_runs(source_key, started_at) VALUES (?,?)",
-            (source_key, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO collector_runs(source_key, started_at, provenance, qualification_scope) VALUES (?,?,?,?)",
+            (source_key, datetime.now(timezone.utc).isoformat(), provenance, qualification_scope),
         )
         self.db.commit()
         return cur.lastrowid

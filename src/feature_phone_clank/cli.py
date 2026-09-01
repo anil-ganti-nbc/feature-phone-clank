@@ -60,6 +60,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     from .core.registry import collectors
     from .core.run_lock import LockError, RunLock
     from .core.runner import run_production_collector
+    from .core.qualification import QualificationProvenance
     from .core.scope import load_scope
     from .providers.discord import DiscordNotifier
     from .providers.sqlite import SqliteStore
@@ -97,6 +98,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 region=getattr(collector, "region", None),
                 base_url=getattr(collector, "base_url", ""),
                 notifier=notifier,
+                provenance=QualificationProvenance.SCHEDULED,
             )
             results.append({"source_key": source_key, **stats})
         # Delivery is attempted after collection, never in place of it: a
@@ -127,6 +129,7 @@ def cmd_run_experimental(args: argparse.Namespace) -> int:
     from .core.registry import collectors
     from .core.run_lock import LockError, RunLock
     from .core.runner import run_experimental
+    from .core.qualification import QualificationProvenance
     from .core.scope import load_scope
     from .providers.sqlite import SqliteStore
 
@@ -162,6 +165,7 @@ def cmd_run_experimental(args: argparse.Namespace) -> int:
                 source_type=getattr(collector, "source_type", "catalogue"),
                 region=getattr(collector, "region", None),
                 base_url=getattr(collector, "base_url", ""),
+                provenance=QualificationProvenance.TEST,
             )
             results.append({"source_key": source_key, **stats})
     finally:
