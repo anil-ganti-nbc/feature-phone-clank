@@ -78,3 +78,26 @@ def test_macos_build_replaces_the_app_bundle_and_imports_dashboard_statically():
         assert "--windowed" in build.read()
     with (root / "native/macos/launcher.py").open(encoding="utf-8") as launcher:
         assert "from feature_phone_clank.dashboard import serve" in launcher.read()
+
+
+def test_com009_run_history_shows_why_a_run_failed(monkeypatch, tmp_path):
+    """STD-UI-COM-009: `status` separates ok / blocked_zero_result, but two
+    runs that both land on `failed` for materially different reasons were
+    rendered identically. The backend records the reason per run in
+    run_errors; Run History must not silently omit it."""
+    monkeypatch.setenv("FEATURE_PHONE_CLANK_DATA_DIR", str(tmp_path / "field-test"))
+    database = resolve_data_path("data/feature_phone_clank.db")
+    store = SqliteStore(str(database))
+    try:
+        fetch_run = store.run_started("hmd-nokia")
+        store.run_finished(fetch_run, "failed", {"discovered": 0},
+                           ["HTTPError 503 fetching the listing page"])
+        parse_run = store.run_started("hmd-nokia")
+        store.run_finished(parse_run, "failed", {"discovered": 0},
+                           ["ValueError: spec table markup changed"])
+    finally:
+        store.close()
+
+    page = render(database)
+    assert "HTTPError 503 fetching the listing page" in page
+    assert "ValueError: spec table markup changed" in page
