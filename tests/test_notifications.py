@@ -126,7 +126,7 @@ def test_suppressed_event_never_delivered(store):
     notifier.enqueue(event, event_id)
     assert store.notification_counts("discord") == {"suppressed": 1}
     result = notifier.drain()
-    assert result == {"sent": 0, "failed": 0, "remaining": 0}
+    assert result == {"sent": 0, "failed": 0, "remaining": 0, "held": 0, "deferred": 0}
 
 
 # -- 3: failed delivery persists error / stays retryable ---------------------
@@ -218,7 +218,7 @@ def test_missing_webhook_does_not_crash_and_leaves_pending(store):
     notifier = DiscordNotifier(store, webhook_url=None)
     notifier.enqueue(event, event_id)
     result = notifier.drain()
-    assert result == {"sent": 0, "failed": 0, "remaining": 1}
+    assert result == {"sent": 0, "failed": 0, "remaining": 1, "held": 0, "deferred": 0}
     assert store.notifications_by_status("pending", "discord")[0]["attempts"] == 0
 
 

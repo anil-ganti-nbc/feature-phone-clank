@@ -317,14 +317,94 @@ def cmd_deliver(args: argparse.Namespace) -> int:
     if store is None:
         return 3
     try:
+        if args.preview:
+            # Read-only: no send, no requeue, no policy write, no mutation
+            # of any kind. Safe to run against a live database at any time.
+            print(json.dumps(_delivery_preview(store, getattr(args, "cutoff", None)),
+                             indent=2, default=str))
+            return 0
         if args.requeue_failed:
             n = store.requeue_failed_notifications("discord")
             print(json.dumps({"status": "ok", "requeued": n}, indent=2))
         notifier = DiscordNotifier(store, _resolve_webhook_url())
-        result = notifier.drain()
+        result = notifier.drain(include_held=getattr(args, "include_held", False))
     finally:
         store.close()
     print(json.dumps({"status": "ok", **result}, indent=2, default=str))
+    return 0
+
+
+def _delivery_preview(store, proposed_cutoff: str | None) -> dict:
+    """Assemble the read-only activation preview.
+
+    Answers the only question that matters before switching delivery on for
+    the first time: if I activate with this cutoff, what exactly goes out,
+    and what stays held? Nothing here writes, sends, or resolves a webhook
+    URL, so no secret can appear in the output.
+    """
+    from .core.delivery_policy import (
+        ACTIVATION_CUTOFF_KEY,
+        HELD_REASONS,
+        decide,
+        load_policy,
+    )
+
+    preview = store.delivery_preview("discord")
+    stored = store.policy_get(ACTIVATION_CUTOFF_KEY)
+    installed = load_policy(stored)
+    preview["installed_activation_policy"] = installed.describe()
+
+    rows = store.pending_notifications_with_event_time("discord")
+    for label, raw in (("installed", stored), ("proposed", proposed_cutoff)):
+        if raw is None:
+            continue
+        policy = load_policy(raw)
+        tally: dict[str, int] = {}
+        for row in rows:
+            tally[decide(row["event_detected_at"], policy)] = (
+                tally.get(decide(row["event_detected_at"], policy), 0) + 1
+            )
+        preview[f"{label}_cutoff_effect"] = {
+            "cutoff": policy.describe(),
+            "would_send": tally.get("send", 0),
+            "would_hold": sum(v for k, v in tally.items() if k in HELD_REASONS),
+            "breakdown": tally,
+        }
+    preview["webhook_configured"] = bool(_resolve_webhook_url())
+    return preview
+
+
+def cmd_delivery_activation(args: argparse.Namespace) -> int:
+    """Show, or explicitly install, the durable activation cutoff.
+
+    Installing a cutoff is deliberately its own command: it is an operator
+    decision about what history may leave the building, not a side effect of
+    running or delivering.
+    """
+    from .core.delivery_policy import ACTIVATION_CUTOFF_KEY, load_policy, parse_timestamp
+
+    if not Path(args.db).exists():
+        print(json.dumps({"status": "no_database"}, indent=2))
+        return 0
+    store = _open_state_compatible_store(args.db)
+    if store is None:
+        return 3
+    try:
+        if args.set_cutoff:
+            if parse_timestamp(args.set_cutoff) is None:
+                # Fail closed rather than persist a value the policy would
+                # later be unable to read.
+                print(json.dumps({
+                    "status": "invalid_cutoff",
+                    "message": "cutoff must be an ISO-8601 timestamp, e.g. 2026-09-05T00:00:00Z",
+                    "given": args.set_cutoff,
+                }, indent=2))
+                return 2
+            store.policy_set(ACTIVATION_CUTOFF_KEY, args.set_cutoff)
+        policy = load_policy(store.policy_get(ACTIVATION_CUTOFF_KEY))
+        print(json.dumps({"status": "ok", "activation_policy": policy.describe()}, indent=2))
+    finally:
+        store.close()
     return 0
 
 
@@ -529,7 +609,22 @@ def main(argv: list[str] | None = None) -> int:
     p_deliver = sub.add_parser("deliver", help="attempt delivery of pending notifications")
     p_deliver.add_argument("--requeue-failed", action="store_true",
                            help="move terminally-failed notifications back to pending first")
+    p_deliver.add_argument("--preview", action="store_true",
+                           help="read-only: show what delivery would consider, send nothing")
+    p_deliver.add_argument("--cutoff", metavar="ISO8601",
+                           help="with --preview, evaluate a proposed activation cutoff without saving it")
+    p_deliver.add_argument("--include-held", action="store_true",
+                           help="explicit historical replay: also deliver rows the activation "
+                                "policy is holding (never implied by any other flag)")
     p_deliver.set_defaults(func=cmd_deliver)
+
+    p_activation = sub.add_parser(
+        "delivery-activation",
+        help="show or set the durable activation cutoff for notification delivery",
+    )
+    p_activation.add_argument("--set", metavar="ISO8601", dest="set_cutoff",
+                              help="persist the activation cutoff (queued rows older than this stay held)")
+    p_activation.set_defaults(func=cmd_delivery_activation)
 
     p_notif = sub.add_parser("notifications", help="inspect the notification outbox")
     p_notif.add_argument("--status", choices=["pending", "sent", "failed", "suppressed"],

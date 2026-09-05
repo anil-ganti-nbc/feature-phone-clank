@@ -162,6 +162,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     status TEXT NOT NULL DEFAULT 'pending',  -- pending | sent | failed | suppressed
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
-    sent_at TEXT
+    sent_at TEXT,
+    not_before TEXT  -- durable retry floor (RFC 429 Retry-After); NULL = eligible now
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
+
+-- Durable operator policy for delivery activation (v6). Key/value so a
+-- future policy knob does not need another migration; the only key in use
+-- today is `discord.activation_cutoff` (see core/delivery_policy.py).
+CREATE TABLE IF NOT EXISTS delivery_policy (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

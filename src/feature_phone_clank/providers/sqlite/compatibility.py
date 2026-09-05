@@ -44,7 +44,7 @@ from enum import Enum
 # The expected persistent-state contract of THIS software version. Single
 # source of truth; `providers.sqlite` re-exports this as SCHEMA_VERSION so
 # the schema, the migrations, and the compatibility gate cannot drift apart.
-EXPECTED_SCHEMA_VERSION = 5
+EXPECTED_SCHEMA_VERSION = 6
 
 # Every table the current schema (schema.sql + applied migrations at this
 # version) must have left behind. Used to corroborate the marker: a marker
@@ -58,6 +58,7 @@ EXPECTED_TABLES = frozenset({
     "collector_runs",
     "run_errors",
     "notifications",
+    "delivery_policy",
     "classification_log",
     "qualification_state",
     "qualification_epochs",

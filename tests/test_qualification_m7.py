@@ -9,6 +9,7 @@ from feature_phone_clank.core.qualification import (
     prepare,
 )
 from feature_phone_clank.providers.sqlite import SqliteStore
+from feature_phone_clank.providers.sqlite.compatibility import EXPECTED_SCHEMA_VERSION
 
 
 def _run(store, source, scope, material, provenance=QualificationProvenance.SCHEDULED):
@@ -78,7 +79,9 @@ def test_migration_is_additive_and_existing_runs_survive(tmp_path):
 
     second = SqliteStore(str(path))
     try:
-        assert second.schema_version() == 5
+        # Pinned to the compatibility authority, not a literal: this test
+        # asserts the migration is additive, not which version is current.
+        assert second.schema_version() == EXPECTED_SCHEMA_VERSION
         row = second.db.execute("SELECT status, stats_json, provenance FROM collector_runs WHERE id=?", (run_id,)).fetchone()
         assert row["status"] == "ok" and '"legacy": true' in row["stats_json"]
         assert row["provenance"] == "UNKNOWN"

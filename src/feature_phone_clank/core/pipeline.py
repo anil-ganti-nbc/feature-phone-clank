@@ -90,13 +90,27 @@ def _record_and_notify(store, event: Event, notify: NotifyFn | None, stats: dict
     """Persist `event` (idempotent by dedup_key) and, only for a genuinely
     NEW row, invoke `notify`. A re-derived duplicate of an already-persisted
     event must never re-trigger notification — `store.record_event`
-    returning None (dedup hit) is exactly how that's already guaranteed."""
-    event_id = store.record_event(event)
-    if event_id is None:
-        return
+    returning None (dedup hit) is exactly how that's already guaranteed.
+
+    The insert and the enqueue share one transaction. They used to commit
+    separately, so a crash or a failing enqueue in between left a committed
+    event with no outbox row; event deduplication then guaranteed replay
+    could never repair it, because the second pass saw the event already
+    existed and skipped the notify callback entirely. Committing together
+    means the pair is either wholly durable or wholly absent, and an absent
+    pair replays correctly on the next run.
+
+    `notify` only *persists* an outbox row (DiscordNotifier.enqueue); no
+    network request happens here, so nothing irreversible occurs inside the
+    transaction. Delivery is a separate, later step.
+    """
+    with store.transaction():
+        event_id = store.record_event(event)
+        if event_id is None:
+            return
+        if notify is not None:
+            notify(event, event_id)
     stats["events_created"] += 1
-    if notify is not None:
-        notify(event, event_id)
 
 
 def process_run(

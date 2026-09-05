@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -90,6 +91,18 @@ _MIGRATIONS: dict[int, list[str]] = {
         "created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(run_id, event_type))",
         "CREATE INDEX IF NOT EXISTS idx_qualification_events_scope ON qualification_events(scope_key, epoch_id, event_type)",
     ],
+    6: [
+        # Durable retry floor so a 429's Retry-After survives the process
+        # that observed it. NULL means "eligible now" — every pre-existing
+        # row keeps its current eligibility.
+        "ALTER TABLE notifications ADD COLUMN not_before TEXT",
+        # Durable activation policy (core/delivery_policy.py). Empty at
+        # migration time: installing a cutoff is an explicit operator act,
+        # never a side effect of upgrading.
+        "CREATE TABLE IF NOT EXISTS delivery_policy ("
+        "key TEXT PRIMARY KEY, value TEXT NOT NULL, "
+        "updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
+    ],
 }
 
 
@@ -107,8 +120,14 @@ def connect_readonly(db_path: str) -> sqlite3.Connection:
 
 
 class SqliteStore:
+    # Depth of the current explicit `transaction()` block. While non-zero,
+    # write helpers skip their own commit so a caller can make several
+    # statements durable together (event + its outbox row).
+    _tx_depth = 0
+
     def __init__(self, db_path: str = "data/feature_phone_clank.db") -> None:
         self.db_path = db_path
+        self._tx_depth = 0
         if db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         # Phase 1 — read-only inspection before any read-write handle exists.
@@ -226,6 +245,38 @@ class SqliteStore:
         self.db.commit()
 
     # -- lifecycle ------------------------------------------------------
+
+    def _maybe_commit(self) -> None:
+        """Commit unless an explicit `transaction()` owns the boundary."""
+        if self._tx_depth == 0:
+            self.db.commit()
+
+    @contextmanager
+    def transaction(self):
+        """Make several writes durable together, or not at all.
+
+        Exists for one specific invariant: an event and the notification
+        outbox row it implies must commit atomically. Before this,
+        `record_event` committed on its own and the enqueue committed
+        separately, so a crash between them left a committed event with no
+        outbox row — and because event insertion is deduplicated by
+        `dedup_key`, replaying the same collection could never repair the
+        omission (the event already existed, so no notify callback fired).
+
+        Reentrant by depth so nesting cannot commit early. Any exception
+        rolls the whole block back and propagates.
+        """
+        self._tx_depth += 1
+        try:
+            yield self
+        except BaseException:
+            if self._tx_depth == 1:
+                self.db.rollback()
+            raise
+        finally:
+            self._tx_depth -= 1
+        if self._tx_depth == 0:
+            self.db.commit()
 
     def schema_version(self) -> int:
         return self.db.execute(
@@ -403,7 +454,12 @@ class SqliteStore:
     def record_event(self, event: Event) -> int | None:
         """Insert an event; returns its id, or None if an event with the
         same dedup_key already exists (brief section 13 — idempotent by
-        construction, not by a pre-check)."""
+        construction, not by a pre-check).
+
+        Inside `transaction()` this does not commit: the event and the
+        notification outbox row it implies become durable together or not at
+        all (see core/pipeline.py's `_record_and_notify`).
+        """
         dedup_key = event.dedup_key()
         cur = self.db.execute(
             "INSERT OR IGNORE INTO events(product_id, collector, event_type, "
@@ -419,7 +475,7 @@ class SqliteStore:
                 event.product_key,
             ),
         )
-        self.db.commit()
+        self._maybe_commit()
         if cur.rowcount == 0:
             return None
         return self.db.execute(
@@ -626,7 +682,7 @@ class SqliteStore:
             "payload_json, status) VALUES (?,?,?,?,?)",
             (event_id, provider, dedup_key, json.dumps(payload, default=str), status),
         )
-        self.db.commit()
+        self._maybe_commit()
 
     def notification_by_dedup_key(self, dedup_key: str) -> sqlite3.Row | None:
         return self.db.execute(
@@ -638,6 +694,123 @@ class SqliteStore:
             "SELECT * FROM notifications WHERE provider=? AND status='pending' "
             "ORDER BY id", (provider,),
         ).fetchall()
+
+    def pending_notifications_with_event_time(self, provider: str) -> list[sqlite3.Row]:
+        """Pending rows plus the `detected_at` of the event each one is for.
+
+        LEFT JOIN on purpose: a row whose event is missing must still be
+        returned, carrying `event_detected_at IS NULL`, so the activation
+        policy can hold it explicitly rather than the query silently
+        dropping it from view.
+        """
+        return self.db.execute(
+            "SELECT n.*, e.detected_at AS event_detected_at, e.event_type AS event_type, "
+            "e.collector AS event_collector "
+            "FROM notifications n LEFT JOIN events e ON e.id = n.event_id "
+            "WHERE n.provider=? AND n.status='pending' ORDER BY n.id",
+            (provider,),
+        ).fetchall()
+
+    def defer_notification(self, notification_id: int, not_before_iso: str) -> None:
+        """Set a durable retry floor without touching status or attempts.
+
+        Used for HTTP 429: the row stays `pending` and un-penalised, but no
+        drain (this process or any later one) will pick it up until the
+        rate-limit window has passed.
+        """
+        self.db.execute(
+            "UPDATE notifications SET not_before=? WHERE id=?",
+            (not_before_iso, notification_id),
+        )
+        self._maybe_commit()
+
+    def clear_notification_defer(self, notification_id: int) -> None:
+        self.db.execute("UPDATE notifications SET not_before=NULL WHERE id=?", (notification_id,))
+        self._maybe_commit()
+
+    # -- delivery policy (durable activation) ---------------------------
+
+    def policy_get(self, key: str) -> str | None:
+        row = self.db.execute("SELECT value FROM delivery_policy WHERE key=?", (key,)).fetchone()
+        return row["value"] if row is not None else None
+
+    def policy_set(self, key: str, value: str) -> None:
+        self.db.execute(
+            "INSERT INTO delivery_policy(key, value, updated_at) VALUES (?,?,datetime('now')) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+            (key, value),
+        )
+        self._maybe_commit()
+
+    def policy_all(self) -> dict[str, str]:
+        return {
+            r["key"]: r["value"]
+            for r in self.db.execute("SELECT key, value FROM delivery_policy").fetchall()
+        }
+
+    def delivery_preview(self, provider: str = "discord") -> dict:
+        """Read-only delivery inventory. Mutates nothing, sends nothing.
+
+        Returns the raw material an operator needs before enabling delivery
+        for the first time: how much is queued, how old it is, how much has
+        already been attempted, and which rows are structurally odd (no
+        event row, or no usable event timestamp).
+        """
+        counts = {
+            r["status"]: r["c"]
+            for r in self.db.execute(
+                "SELECT status, COUNT(*) c FROM notifications WHERE provider=? GROUP BY status",
+                (provider,),
+            ).fetchall()
+        }
+        by_type = [
+            dict(r)
+            for r in self.db.execute(
+                "SELECT COALESCE(e.event_type,'(no event row)') AS event_type, "
+                "COALESCE(e.collector,'(no event row)') AS source, n.status, COUNT(*) AS count "
+                "FROM notifications n LEFT JOIN events e ON e.id = n.event_id "
+                "WHERE n.provider=? GROUP BY event_type, source, n.status "
+                "ORDER BY count DESC, event_type",
+                (provider,),
+            ).fetchall()
+        ]
+        span = self.db.execute(
+            "SELECT MIN(e.detected_at) AS oldest, MAX(e.detected_at) AS newest "
+            "FROM notifications n JOIN events e ON e.id = n.event_id "
+            "WHERE n.provider=? AND n.status='pending'",
+            (provider,),
+        ).fetchone()
+        attempted = self.db.execute(
+            "SELECT SUM(CASE WHEN attempts > 0 THEN 1 ELSE 0 END) AS attempted, "
+            "SUM(CASE WHEN attempts = 0 THEN 1 ELSE 0 END) AS never_attempted "
+            "FROM notifications WHERE provider=? AND status='pending'",
+            (provider,),
+        ).fetchone()
+        missing = self.db.execute(
+            "SELECT "
+            "SUM(CASE WHEN n.event_id IS NULL THEN 1 ELSE 0 END) AS null_event_id, "
+            "SUM(CASE WHEN n.event_id IS NOT NULL AND e.id IS NULL THEN 1 ELSE 0 END) AS orphaned_event, "
+            "SUM(CASE WHEN e.id IS NOT NULL AND (e.detected_at IS NULL OR e.detected_at='') THEN 1 ELSE 0 END) "
+            "  AS missing_detected_at "
+            "FROM notifications n LEFT JOIN events e ON e.id = n.event_id "
+            "WHERE n.provider=? AND n.status='pending'",
+            (provider,),
+        ).fetchone()
+        return {
+            "provider": provider,
+            "counts_by_status": counts,
+            "pending_by_source_and_type": by_type,
+            "pending_event_time_span": {"oldest": span["oldest"], "newest": span["newest"]},
+            "pending_attempts": {
+                "already_attempted": attempted["attempted"] or 0,
+                "never_attempted": attempted["never_attempted"] or 0,
+            },
+            "pending_provenance_gaps": {
+                "null_event_id": missing["null_event_id"] or 0,
+                "orphaned_event_id": missing["orphaned_event"] or 0,
+                "missing_detected_at": missing["missing_detected_at"] or 0,
+            },
+        }
 
     def mark_notification(self, notification_id: int, status: str, error: str | None = None) -> None:
         self.db.execute(
