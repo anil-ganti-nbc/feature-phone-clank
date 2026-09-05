@@ -23,7 +23,7 @@
 #   tcl-alcatel-global  15/15 ok since 2026-08-27 00:49Z (2 products)
 # First production runs of each BASELINE (products persist, 0 events) —
 # same suppression path as hmd-nokia's 2026-08-26 baseline (44 discovered,
-# 0 events). Not promoted, deliberately:
+# 0 events). Still NOT promoted, deliberately:
 #   itel-india — MOTHBALLED 2026-08-31 by operator decision: production
 #     browser support would grow the image from ~213 MB to ~1.88 GB for the
 #     fleet's only browser-dependent collector covering ~6 products with
@@ -31,10 +31,17 @@
 #     experimental-lane soak evidence retained; unscheduled and NOT
 #     production-eligible; resurrection only after explicit operator review
 #     (docs/ticket-itel-playwright-architecture-decision.md).
-#   lava-india — BLOCKED: 3 whole-run ReadTimeouts in 50 natural cycles
-#     (Aug 22, Aug 23, Aug 28); its local HttpFetcher predates the
-#     915f908 hmd fetcher repair (single attempt, body-read outside try).
-#     Smallest repair: port the shared/repaired fetcher, re-soak, re-review.
+#
+# lava-india promoted 2026-09-05 by explicit operator decision (maturity
+# override; the promotion queue was not re-run). Its maturity was being held
+# by a HEALTH problem, not by missing evidence: 3 whole-run ReadTimeouts in
+# 50 natural cycles (Aug 22, Aug 23, Aug 28), because its local HttpFetcher
+# predates the 915f908 hmd fetcher repair (single attempt, body-read outside
+# try). That health state is UNCHANGED and still honest — promotion did not
+# repair the fetcher and must not be read as declaring it healthy. A
+# transport failure remains an isolated per-source failed run (run() never
+# raises), never state corruption. The smallest real repair is still: port
+# the shared/repaired fetcher, re-soak, re-review.
 # Known accepted caveat for the five promoted sources: their local
 # HttpFetchers share the same single-attempt structure pre-repair hmd had;
 # zero transport failures observed for these five across their soaks, and a
@@ -48,6 +55,7 @@
 # or resight behaviour. Delivery still queues pending the Discord webhook secret.
 production_collectors:
   - hmd-nokia
+  - lava-india
   - punkt-ch
   - doro-gb
   - mudita-com

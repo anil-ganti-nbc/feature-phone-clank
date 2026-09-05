@@ -257,16 +257,19 @@ def test_wave2_sources_registered_experimental_and_production_excluded():
     from feature_phone_clank.core.scope import load_scope
 
     scope = load_scope("config/scope.yaml")
-    # doro-gb, mudita-com, sunbeam-f1-us, tcl-alcatel-global were promoted to
-    # production 2026-08-30 after natural-soak review (15/15 ok each, zero
-    # noise) — see scope.yaml notes. itel-india and lava-india remain
-    # experimental-only (playwright packaging / unrepaired fetcher).
-    for sid in ("doro-gb", "mudita-com", "sunbeam-f1-us", "tcl-alcatel-global"):
+    # doro-gb, mudita-com, sunbeam-f1-us, tcl-alcatel-global promoted
+    # 2026-08-30 after natural-soak review (15/15 ok each, zero noise).
+    # lava-india promoted 2026-09-05 by explicit operator maturity decision
+    # — its unrepaired-fetcher health problem is unchanged and still honest.
+    for sid in ("doro-gb", "mudita-com", "sunbeam-f1-us", "tcl-alcatel-global", "lava-india"):
         assert sid in reg.names(), f"{sid} not registered"
         assert sid in scope.production_collectors
-    for sid in ("itel-india", "lava-india"):
-        assert sid in reg.names(), f"{sid} not registered"
-        assert sid not in scope.production_collectors
+    # itel-india stays out: MOTHBALLED 2026-08-31 by operator decision for an
+    # infrastructure-cost reason (~1.88 GB image for ~6 products), not a
+    # maturity holdback. Promotion must not revive a source retired for its
+    # own reason.
+    assert "itel-india" in reg.names()
+    assert "itel-india" not in scope.production_collectors
 
 
 def test_wave2_registration_does_not_disturb_existing_roster():
