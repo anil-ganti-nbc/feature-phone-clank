@@ -102,3 +102,60 @@ def test_promotion_did_not_falsify_lava_health():
     assert "lava-india" in scope_text
     assert "ReadTimeouts" in scope_text
     assert "915f908" in scope_text  # the unrepaired-fetcher provenance
+
+
+# ------------------------------------ retirement is a reason, not a permission
+
+
+def test_mothballed_is_a_reason_and_never_a_permission():
+    """A retired collector is outside production for a *different* reason
+    than an unqualified one -- but it is outside just the same.
+
+    `is_production` deliberately does not consult the mothballed list: if a
+    key ever appeared in both, the allowlist alone would still decide, so
+    the new axis can never revive a source or suppress one.
+    """
+    from feature_phone_clank.core.scope import is_mothballed, is_production
+
+    scope = ScopeConfig(production_collectors=["hmd-nokia"],
+                        mothballed_collectors=["itel-india"])
+    assert is_production("hmd-nokia", scope) is True
+    assert is_production("itel-india", scope) is False
+    assert is_mothballed("itel-india", scope) is True
+    assert is_mothballed("hmd-nokia", scope) is False
+
+    # Contradictory config: permission still comes from the allowlist alone.
+    contradictory = ScopeConfig(production_collectors=["hmd-nokia"],
+                                mothballed_collectors=["hmd-nokia"])
+    assert is_production("hmd-nokia", contradictory) is True
+
+
+def test_shipped_scope_retires_itel_india_without_promoting_it():
+    """The shipped config records *why* itel-india is not production.
+
+    Before this axis existed the dashboard bucketed it as "Experimental /
+    Soak", which told the operator it was still soaking toward promotion.
+    It is not: it was withdrawn 2026-08-31 over browser-image cost, and
+    resurrection needs an explicit operator review.
+    """
+    from feature_phone_clank.paths import resolve_config_path
+
+    scope = load_scope(resolve_config_path("scope.yaml"))
+    assert "itel-india" in scope.mothballed_collectors
+    assert "itel-india" not in scope.production_collectors
+    # Promotion of the seven active sources is unaffected by the new list.
+    assert "lava-india" in scope.production_collectors
+    assert not set(scope.mothballed_collectors) & set(scope.production_collectors)
+
+
+def test_dashboard_splits_retired_out_of_the_experimental_bucket():
+    from feature_phone_clank.dashboard import _registered_collectors
+
+    production, experimental, mothballed = _registered_collectors()
+    assert "itel-india" in mothballed
+    assert "itel-india" not in experimental
+    assert "itel-india" not in production
+    # The operator's target: no ACTIVE collector is left at experimental
+    # maturity. Retired ones are counted separately, not hidden.
+    assert experimental == [], f"unexpected experimental collectors: {experimental}"
+    assert "lava-india" in production

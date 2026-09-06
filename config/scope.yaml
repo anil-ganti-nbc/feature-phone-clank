@@ -53,6 +53,14 @@
 # resighted cleanly (punkt 1, doro 9, mudita 2, sunbeam 30, tcl 2; hmd 44) with
 # 0 events, 0 identity anomalies, 0 failures. Zero false novelty from baseline
 # or resight behaviour. Delivery still queues pending the Discord webhook secret.
+# Retired by explicit operator decision, not awaiting promotion. This list
+# grants nothing: membership only records WHY a collector sits outside
+# `production_collectors`, so the dashboard can say "retired" rather than
+# implying it is still soaking. See the itel-india note above for the
+# reasoning and the resurrection condition.
+mothballed_collectors:
+  - itel-india
+
 production_collectors:
   - hmd-nokia
   - lava-india

@@ -22,14 +22,20 @@ untouched legacy Phase 0 surface:
     -- stays 403/404.
 
 "Run all collectors" only ever runs `config/scope.yaml`'s
-`production_collectors` (today: hmd-nokia). Every other registered
-collector (itel-india, lava-india, punkt-ch, doro-gb, mudita-com,
-sunbeam-f1-us, tcl-alcatel-global -- see collectors/__init__.py) is
-experimental/soak: it is listed on the dashboard as an individually
-runnable, clearly-labelled "Experimental / Soak" control that writes only
-to the isolated experimental database, and it is NEVER included in "Run
-all" merely because it is registered. Promoting one out of soak is a
-one-line edit to config/scope.yaml, never a dashboard action.
+`production_collectors` (today: hmd-nokia, lava-india, punkt-ch, doro-gb,
+mudita-com, sunbeam-f1-us, tcl-alcatel-global). Every other registered
+collector is listed as an individually runnable, clearly-labelled control
+that writes only to the isolated experimental database, and is NEVER
+included in "Run all" merely because it is registered.
+
+Outside the allowlist is one permission state with two distinct reasons,
+and the dashboard names both: "Experimental / Soak" for a collector still
+working toward promotion, and "Retired / mothballed" for one withdrawn by
+an explicit operator decision (`mothballed_collectors`; today: itel-india,
+retired 2026-08-31 over browser-image cost). Neither list confers any
+capability -- `is_production` still reads the allowlist alone -- and
+promoting a collector remains a one-line edit to config/scope.yaml, never
+a dashboard action.
 
 QC contract (modeled on Watch Clank's EventReview -- see
 providers/qc_store.py's module docstring for the full contract): a
@@ -117,9 +123,18 @@ def _loopback(value):
 
 
 def _registered_collectors():
-    """(production_keys, experimental_keys) -- every registered collector,
-    split by config/scope.yaml membership. Import is local so importing
-    dashboard.py never has a side effect on the collector registry."""
+    """(production_keys, experimental_keys, mothballed_keys).
+
+    Every registered collector, split by config/scope.yaml membership.
+    Mothballed keys are carved out of the experimental remainder rather
+    than added to it: outside the production allowlist is one permission
+    state but two different reasons, and "retired by operator decision" must
+    not read as "still soaking toward promotion". Nothing here grants a
+    mothballed collector any capability an unqualified one does not have.
+
+    Import is local so importing dashboard.py never has a side effect on the
+    collector registry.
+    """
     from . import collectors as _collectors  # noqa: F401 — registration side effect
     from .core.registry import collectors
     from .core.scope import load_scope
@@ -128,8 +143,10 @@ def _registered_collectors():
     scope = load_scope(resolve_config_path("scope.yaml"))
     all_names = collectors.names()
     production = [n for n in all_names if n in scope.production_collectors]
-    experimental = [n for n in all_names if n not in scope.production_collectors]
-    return production, experimental
+    rest = [n for n in all_names if n not in scope.production_collectors]
+    mothballed = [n for n in rest if n in scope.mothballed_collectors]
+    experimental = [n for n in rest if n not in scope.mothballed_collectors]
+    return production, experimental, mothballed
 
 
 def _qc_action_buttons(event_id):
@@ -162,9 +179,9 @@ def render(db, controller=None, qc_db=None):
         qc_store.close()
     is_operator = isinstance(controller, LocalCollectionController)
     try:
-        production_keys, experimental_keys = _registered_collectors()
+        production_keys, experimental_keys, mothballed_keys = _registered_collectors()
     except Exception:
-        production_keys, experimental_keys = [], []
+        production_keys, experimental_keys, mothballed_keys = [], [], []
     controller_snapshot = controller.snapshot() if is_operator else {}
     # Sources health (Watch Clank dashboard parity): healthy/degraded/never-run,
     # computed from this database's own collector_runs -- production
@@ -226,14 +243,24 @@ async function runAll(){
             return f'<div class=collectorrow><span class=name>{e(key)}</span><span class="badge {badge}">{e(state)}</span><button class=smallbtn {disabled} onclick="runCollector(\'{e(key)}\',\'{mode}\')">Run</button></div>'
         prod_rows = "".join(_row(k, "production") for k in production_keys) or '<p class=muted>No production collectors in config/scope.yaml.</p>'
         exp_rows = "".join(_row(k, "experimental") for k in experimental_keys) or '<p class=muted>No experimental/soak collectors registered.</p>'
+        moth_rows = "".join(_row(k, "experimental") for k in mothballed_keys)
+        # Rendered only when something is actually retired: an empty
+        # "Retired" panel would suggest the concept is unused here.
+        moth_panel = (
+            f'<div class="panel pad"><h3 style="margin:0 0 8px;font-size:13px">Retired / mothballed ({len(mothballed_keys)}) '
+            f'<span class="badge badge-soak">hidden from Run all</span></h3>'
+            f'<p class=muted style="margin:0 0 8px">Withdrawn by an explicit operator decision, not awaiting promotion. '
+            f'Still runnable individually into the isolated experimental database; see the reasons recorded in config/scope.yaml.</p>'
+            f'{moth_rows}</div>'
+        ) if mothballed_keys else ''
         collect = f'''<section class="panel pad" style="margin-top:14px" id=operations><h2>Local Collection (manual only)</h2>
 <p class=muted>Nothing runs automatically. Trigger a collector explicitly below. "Run all" only runs collectors approved in config/scope.yaml — experimental/soak collectors are never included automatically.</p>
 <div class="cols two" style="margin-top:10px"><div class="panel pad"><h3 style="margin:0 0 8px;font-size:13px">Production ({len(production_keys)})<button class=smallbtn style="float:right" onclick="runAll()">Run all</button></h3>{prod_rows}</div>
-<div class="panel pad"><h3 style="margin:0 0 8px;font-size:13px">Experimental / Soak ({len(experimental_keys)}) <span class="badge badge-soak">hidden from Run all</span></h3>{exp_rows}</div></div></section>'''
+<div class="panel pad"><h3 style="margin:0 0 8px;font-size:13px">Experimental / Soak ({len(experimental_keys)}) <span class="badge badge-soak">hidden from Run all</span></h3>{exp_rows}</div>{moth_panel}</div></section>'''
     else:
         collect='' if controller is None else '''<section class="panel pad" style="margin-top:14px"><h2>Collection disabled</h2><p class=muted>This Phase 0 dashboard is read-only. No authenticated mutation profile exists; use the approved CLI workflow outside the dashboard.</p></section>'''
     attention_badges = ", ".join(f'<span class="badge badge-warn" style="margin-right:6px">{e(k)}</span>' for k in degraded_sources)
-    sources_html = f'''<section class="panel pad" style="margin-top:14px" id=sources><h2>Sources</h2><div class="kpis" style="grid-template-columns:repeat(4,1fr)"><div class="kpi"><div class="kpi-label">HEALTHY</div><div class="kpi-value" style="color:var(--green)">{len(healthy_sources)}</div><span class=muted>Production, last run ok</span></div><div class="kpi"><div class="kpi-label">DEGRADED / FAILED</div><div class="kpi-value" style="color:{'var(--amber)' if degraded_sources else 'var(--muted)'}">{len(degraded_sources)}</div><span class=muted>Production, needs attention</span></div><div class="kpi"><div class="kpi-label">NEVER RUN</div><div class="kpi-value">{len(never_run_sources)}</div><span class=muted>Production, no runs yet</span></div><div class="kpi"><div class="kpi-label">EXPERIMENTAL / SOAK</div><div class="kpi-value">{len(experimental_keys)}</div><span class=muted>Registered, excluded from Run all</span></div></div>{('<p class=small style="margin-top:8px">Needs attention: ' + attention_badges + '</p>') if degraded_sources else ''}</section>'''
+    sources_html = f'''<section class="panel pad" style="margin-top:14px" id=sources><h2>Sources</h2><div class="kpis" style="grid-template-columns:repeat(5,1fr)"><div class="kpi"><div class="kpi-label">HEALTHY</div><div class="kpi-value" style="color:var(--green)">{len(healthy_sources)}</div><span class=muted>Production, last run ok</span></div><div class="kpi"><div class="kpi-label">DEGRADED / FAILED</div><div class="kpi-value" style="color:{'var(--amber)' if degraded_sources else 'var(--muted)'}">{len(degraded_sources)}</div><span class=muted>Production, needs attention</span></div><div class="kpi"><div class="kpi-label">NEVER RUN</div><div class="kpi-value">{len(never_run_sources)}</div><span class=muted>Production, no runs yet</span></div><div class="kpi"><div class="kpi-label">EXPERIMENTAL / SOAK</div><div class="kpi-value">{len(experimental_keys)}</div><span class=muted>Awaiting promotion, excluded from Run all</span></div><div class="kpi"><div class="kpi-label">RETIRED / MOTHBALLED</div><div class="kpi-value">{len(mothballed_keys)}</div><span class=muted>Withdrawn by operator decision</span></div></div>{('<p class=small style="margin-top:8px">Needs attention: ' + attention_badges + '</p>') if degraded_sources else ''}</section>'''
     page = f'''<!doctype html><html><head><meta charset=utf-8>{css}<title>Feature Phone Clank</title></head><body><div class=app><header class="topbar"><div class="brand"><span class="brand-mark">FP</span><span class="brand-name">Feature Phone Clank</span><span class="brand-suite">Clank Fleet</span></div><div class="topbar-meta"><span class="mono">rev {e(rev)}</span><span class="mono">db {e(db.name)}</span><span class="badge plain sq">FIELD TEST MODE</span></div></header><div class="body"><nav class="rail"><div class="rail-group first">Monitor</div><a class="nav active" href="#overview">Overview</a><a class="nav" href="#runs">Run History</a><div class="rail-group">Classification</div><a class="nav" href="#accepted">Accepted</a><a class="nav" href="#ambiguous">Ambiguous</a><a class="nav" href="#rejected">Rejected Smartphones</a><a class="nav" href="#incomplete">Incomplete</a><div class="rail-group">Review</div><a class="nav" href="#events">Recent Events</a><a class="nav" href="#qc-history">Recently QCed</a><a class="nav" href="#products">Products</a><div class="rail-group">System</div><a class="nav" href="#sources">Sources</a><a class="nav" href="#about">About</a></nav><main class="main"><div class="wrap"><section class="kpis"><div class="kpi is-warn"><div class="kpi-label">OVERALL HEALTH</div><div class="kpi-value">{'WARNING' if not runs else 'HEALTHY'}</div><span class=muted>Field-test local state</span></div><div class="kpi"><div class="kpi-label">ACCEPTED</div><div class="kpi-value">{len(accepted)}</div><span class=muted>Feature phones</span></div><div class="kpi"><div class="kpi-label">AMBIGUOUS</div><div class="kpi-value">{len(amb)}</div><span class=muted>Needs owner review</span></div><div class="kpi"><div class="kpi-label">REJECTED SMARTPHONES</div><div class="kpi-value">{len(rejected)}</div><span class=muted>Expected classifier outcome</span></div><div class="kpi"><div class="kpi-label">INCOMPLETE</div><div class="kpi-value">{len(inc)}</div><span class=muted>Present, incomplete specs</span></div></section>{collect}{sources_html}<section class="cols two"><div class="panel pad"><h2>Classification Overview</h2>{table(('Product','Latest observed','Source'),accepted,'No accepted feature phones','Accepted HMD/Nokia feature phones will appear here.')}</div><div class="panel pad"><h2>Local field test</h2><p class=muted>Collection uses the canonical classifier and isolated local database. External delivery is disabled.</p><a href=#runs>View Run History →</a><br><a href=#events>View Recent Events →</a><br><a href=#qc-history>View Recently QCed →</a></div></section><section class="cols"><div class="panel pad" id=ambiguous><h2>Ambiguous Candidates</h2>{table(('Candidate','Last observed','Stored evidence','Source'),amb,'No ambiguous candidates','No currently ambiguous products are recorded.')}</div><div class="panel pad" id=rejected><h2>Rejected Smartphones</h2>{table(('Candidate','Last observed','Stored evidence','Source'),rejected,'No rejected smartphones','Expected classifier rejections will appear here.')}</div><div class="panel pad" id=incomplete><h2>Incomplete Products</h2>{table(('Product','Completeness','Observed','Source'),inc,'No incomplete products','Incomplete specs do not mean a product disappeared.')}</div></section><section class="panel pad" id=events style="margin-top:14px"><h2>Recent Events / Changes <span class=muted style="font-weight:400">— QC'd items move to Recently QCed</span></h2>{table(('Product','Event','Timestamp','Evidence','QC decision'),ev,'No recent events','New product and change events will appear here.')}</section><section class="panel pad" id=qc-history style="margin-top:14px"><h2>Recently QCed</h2>{table(('Product','Source','Event','Decision','Decided at','Corrected?','Source link'),qcrows,'No QC decisions yet','Decisions made on Recent Events will appear here with full provenance.')}</section><section class="panel pad" id=products style="margin-top:14px"><h2>Product Detail / Identity Evidence</h2>{table(('Resolved product','Model','Presence','Completeness','Latest observation','Source'),productrows,'No products recorded','Product identity and evidence will appear here after local field-test data is present.')}</section><section class="panel pad" id=runs style="margin-top:14px"><h2>Run History</h2>{table(('Source','Started','Status','Observed','Reason / error'),runrows,'No runs recorded yet','Scheduled or local field-test runs will appear here.')}</section><section class="panel pad" id=about><b>Identity safety guidance.</b> Recycled Nokia/HMD names can represent different generations: rely on model and source evidence, not marketing name alone. Incomplete specs do not equal disappearance. Rejected smartphones are expected classifier behaviour, not errors.</section></div></main></div></div>{js}</body></html>'''
     return page
 def serve(host='127.0.0.1',port=8400,controller=None):
