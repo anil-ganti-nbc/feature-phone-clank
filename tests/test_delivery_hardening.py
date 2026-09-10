@@ -20,6 +20,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import requests
 
+import feature_phone_clank
+
 from feature_phone_clank.core.delivery_policy import (
     ACTIVATION_CUTOFF_KEY,
     HELD_BEFORE_CUTOFF,
@@ -136,7 +138,15 @@ def test_two_overlapping_processes_send_one_queued_row_exactly_once(tmp_path):
     store.db.commit()
     store.close()
 
-    env = {**os.environ, "PYTHONPATH": str(tmp_path.parent)}
+    # The child is a fresh interpreter: hand it exactly how the parent
+    # imported this package (repo checkout, editable install, or
+    # site-packages), appended to whatever PYTHONPATH already carried.
+    # The old code clobbered PYTHONPATH with tmp_path.parent, so the
+    # child could not import feature_phone_clank anywhere the package
+    # was not pip-installed, and never reached its send.
+    package_parent = os.path.dirname(os.path.dirname(os.path.abspath(feature_phone_clank.__file__)))
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(filter(None, [
+        os.environ.get("PYTHONPATH", ""), package_parent, str(tmp_path.parent)]))}
     child = subprocess.Popen(
         [sys.executable, "-c", OVERLAP_CHILD, str(db_path), str(marker)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
