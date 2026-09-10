@@ -268,6 +268,32 @@ def test_test_notification_creates_no_event_or_product(store):
     assert row["dedup_key"].startswith("test:")
 
 
+def test_test_notification_does_not_release_real_pending_events(store):
+    """The labelled test send goes through the real delivery path, but a real
+    queued event must come out of it exactly as it went in: still `pending`,
+    never attempted, payload untouched. A test send must never be a backlog
+    release."""
+    event, event_id = real_field_changed_event(store)
+    DiscordNotifier(store, webhook_url=None).enqueue(event, event_id)
+    before = store.notification_counts("discord")
+    assert before.get("pending", 0) >= 1
+    pending_before = [dict(r) for r in store.pending_notifications("discord")]
+
+    notifier = DiscordNotifier(store, webhook_url="https://example.test/webhook", sender=FakeSender(ok=True))
+    result = notifier.enqueue_test(note="activation check")
+
+    assert result["sent"] is True
+    pending_after = [dict(r) for r in store.pending_notifications("discord")]
+    assert pending_after == pending_before
+    for row in pending_after:
+        assert row["attempts"] == 0
+        assert row["sent_at"] is None
+    # Exactly one new row was created (the test row itself), and it alone went out.
+    after = store.notification_counts("discord")
+    assert after["pending"] == before["pending"]
+    assert after.get("sent", 0) == before.get("sent", 0) + 1
+
+
 # -- duplicate protection end-to-end via the pipeline -------------------------
 
 def test_pipeline_rerun_unchanged_state_no_duplicate_notification(store):
