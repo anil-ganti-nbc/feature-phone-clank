@@ -12,3 +12,7 @@ logs/
 # Local AI-tool config, not project content
 .claude/
 logs/
+
+# Compose env substitutions live next to the compose file on the host
+# (may carry the Discord webhook URL). Never commit.
+.env
