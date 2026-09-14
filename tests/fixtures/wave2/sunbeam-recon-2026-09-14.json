@@ -1,0 +1,1658 @@
+{
+  "capture": {
+    "requested_url": "https://sunbeamwireless.com/wp-json/wc/store/v1/products?per_page=100&page=1",
+    "started_at": "2026-09-14T06:51:33.624430+00:00",
+    "status": 200,
+    "final_url": "https://sunbeamwireless.com/wp-json/wc/store/v1/products?per_page=100&page=1",
+    "redirects": [],
+    "headers": {
+      "Date": "Mon, 14 Sep 2026 06:51:35 GMT",
+      "Content-Type": "application/json; charset=UTF-8",
+      "X-WP-Total": "51",
+      "X-WP-TotalPages": "1",
+      "Last-Modified": "Sun, 13 Sep 2026 05:02:49 GMT"
+    },
+    "bytes": 775609,
+    "sha256": "e7afa042726e5c0f5c6abfcf83b8e81595e9d20a02d09449242940c405094bd7",
+    "body_file": "000-e7afa042726e.txt",
+    "duration_s": 1.437
+  },
+  "products": [
+    {
+      "id": 212165,
+      "sku": "PINE-1",
+      "name": "F1 Pro Pine &#8211; Rugged Dumbphone-Talk Only with Numberlink",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-pine-rugged-dumbphone-without-media-copy/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 206029,
+      "sku": "EMRLD",
+      "name": "Starlight Emerald &#8211; Talk only without Touchscreen",
+      "permalink": "https://sunbeamwireless.com/product/starlight-emerald-talk-only-without-touchscreen/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 206027,
+      "sku": "JSPR",
+      "name": "Starlight Jasper &#8211; Talk only with Touchscreen",
+      "permalink": "https://sunbeamwireless.com/product/starlight-jasper-talk-only-with-touchscreen/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 206026,
+      "sku": "PRL",
+      "name": "Starlight Pearl &#8211; Talk &#038; Text with touchscreen",
+      "permalink": "https://sunbeamwireless.com/product/starlight-pearl-talk-text-with-touchscreen/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 206019,
+      "sku": "RBY",
+      "name": "Starlight Ruby -Talk &#038; Text without touchscreen",
+      "permalink": "https://sunbeamwireless.com/product/starlight-ruby-talk-text-with-touchscreen/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 179532,
+      "sku": "BMPH",
+      "name": "Bicycle Mount Phone Holder",
+      "permalink": "https://sunbeamwireless.com/product/bicycle-mount-phone-holder/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "3400",
+        "regular_price": "3400",
+        "sale_price": "3400",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 164846,
+      "sku": "WLW-1",
+      "name": "F1 Pro Willow &#8211; Rugged Dumbphone with Talk Only (No Bluetooth or Wi-Fi)",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-willow-rugged-dumbphone-with-talk-only-no-bluetooth-or-wifi/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 164836,
+      "sku": "BLJ-1",
+      "name": "F1 Horizon Blue Jay &#8211; Flip Phone with Talk Only",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-blue-jay-flip-phone-with-talk-only-no-bluetooth-or-wifi/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 154884,
+      "sku": "FLC",
+      "name": "F1 Horizon Falcon &#8211; Flip Phone with Email and Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-falcon-flip-phone-with-email-and-waze/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "30900",
+        "regular_price": "30900",
+        "sale_price": "30900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 154872,
+      "sku": "SPR",
+      "name": "F1 Pro Spruce &#8211; Rugged Dumbphone with Email and Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-spruce-rugged-dumbphone-with-email-and-waze/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "38900",
+        "regular_price": "38900",
+        "sale_price": "38900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 153859,
+      "sku": "SCPH",
+      "name": "Suction Cup Phone Holder",
+      "permalink": "https://sunbeamwireless.com/product/suction-cup-phone-holder/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "3400",
+        "regular_price": "3400",
+        "sale_price": "3400",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 142338,
+      "sku": "ELM",
+      "name": "F1 Pro Elm &#8211; Rugged Dumbphone Without Media",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-elm-rugged-dumbphone-without-media/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 142334,
+      "sku": "SWN",
+      "name": "F1 Horizon Swan &#8211; Flip Phone Without Media",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-swan-flip-phone-without-media/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 139871,
+      "sku": "EGL-1",
+      "name": "F1 Horizon Eagle &#8211; Flip Phone with Email, Hotspot, and Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-eagle-flip-phone-with-email-hotspot-and-waze/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "30900",
+        "regular_price": "30900",
+        "sale_price": "30900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 139798,
+      "sku": "JNP-1",
+      "name": "F1 Pro Juniper &#8211; Rugged Dumbphone with Email, Hotspot, and Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-juniper-rugged-dumbphone-with-email-hotspot-and-waze/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "38900",
+        "regular_price": "38900",
+        "sale_price": "38900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 117227,
+      "sku": "HRZDCK",
+      "name": "Charging Dock for F1 Horizon Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/charging-dock-for-f1-horizon-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1200",
+        "regular_price": "1200",
+        "sale_price": "1200",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 113879,
+      "sku": "",
+      "name": "Return Claim",
+      "permalink": "https://sunbeamwireless.com/product/return-claim/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        },
+        {
+          "id": 64,
+          "name": "Sunbeam Wireless Services",
+          "slug": "services",
+          "link": "https://sunbeamwireless.com/product-category/services/"
+        }
+      ],
+      "prices": {
+        "price": "0",
+        "regular_price": "0",
+        "sale_price": "0",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 105342,
+      "sku": "DATAREC-1",
+      "name": "Sunbeam Data Recovery Service",
+      "permalink": "https://sunbeamwireless.com/product/data-recovery/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        },
+        {
+          "id": 64,
+          "name": "Sunbeam Wireless Services",
+          "slug": "services",
+          "link": "https://sunbeamwireless.com/product-category/services/"
+        }
+      ],
+      "prices": {
+        "price": "5000",
+        "regular_price": "5000",
+        "sale_price": "5000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 105169,
+      "sku": "HSP",
+      "name": "Screen Protector for F1 Horizon Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/screen-protector-for-f1-horizon-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "700",
+        "regular_price": "700",
+        "sale_price": "700",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 105155,
+      "sku": "HPC",
+      "name": "Hard Shell Cover with Holster for F1 Horizon Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/hard-shell-cover-with-holster-for-f1-horizon-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "2000",
+        "regular_price": "2000",
+        "sale_price": "2000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "variable"
+    },
+    {
+      "id": 104771,
+      "sku": "CHD",
+      "name": "F1 Horizon Chickadee &#8211; Flip Phone with Talk Only",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-chickadee-feature-flip-phone-talk-only/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104769,
+      "sku": "LRK",
+      "name": "F1 Horizon Lark &#8211; Flip Phone without Media",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-lark-feature-flip-phone-tools-without-media/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104762,
+      "sku": "RBN",
+      "name": "F1 Horizon Robin &#8211; Flip Phone with Limited Audio",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-robin-feature-flip-phone-limited-audio/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104761,
+      "sku": "FCH",
+      "name": "F1 Horizon Finch &#8211; Classic Flip Phone",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-finch-classic-flip-phone/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104760,
+      "sku": "WRN",
+      "name": "F1 Horizon Wren &#8211; Classic Flip Phone with Hotspot",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-wren-classic-flip-phone-with-hotspot/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104758,
+      "sku": "CDL",
+      "name": "F1 Horizon Cardinal &#8211; Flip Phone with Navigation, Weather, and Hotspot",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-cardinal-feature-flip-phone-with-navigation-weather-and-hotspot/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104755,
+      "sku": "DVE",
+      "name": "F1 Horizon Dove &#8211; Flip Phone with Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-dove-feature-flip-phone-with-waze/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 104749,
+      "sku": "BBD",
+      "name": "F1 Horizon Bluebird &#8211; Flip Phone with Hotspot and Waze",
+      "permalink": "https://sunbeamwireless.com/product/f1-horizon-bluebird-feature-flip-phone-with-waze-and-hotspot/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "27900",
+        "regular_price": "27900",
+        "sale_price": "27900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 91098,
+      "sku": "PPC",
+      "name": "Hard Shell Cover with Holster for F1 Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-protective-hard-shell-cover-with-holster/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "2000",
+        "regular_price": "2000",
+        "sale_price": "2000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "variable"
+    },
+    {
+      "id": 89519,
+      "sku": "USBAD",
+      "name": "120V USB Charging Adapter for F1 Horizon and Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/120-volt-to-usb-c-charging-adapter-for-f1-horizon-f1-pro-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1000",
+        "regular_price": "1000",
+        "sale_price": "1000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 89498,
+      "sku": "6&#8217;CC",
+      "name": "6’ USB-C Charging Cable for F1 Horizon and Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/6-usb-c-charging-cable-for-f1-horizon-f1-pro-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "800",
+        "regular_price": "800",
+        "sale_price": "800",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 89492,
+      "sku": "PRDCK",
+      "name": "Charging Dock for F1 Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/charging-dock-for-f1-pro-phones/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1200",
+        "regular_price": "1200",
+        "sale_price": "1200",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84818,
+      "sku": "ASN",
+      "name": "F1 Pro Aspen &#8211; Rugged Dumbphone with Hotspot and Waze",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-aspen-rugged-dumbphone-with-waze-and-hotspot/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 85720,
+      "sku": "PSP",
+      "name": "Screen Protector for F1 Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/f1-pro-screen-protector/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "700",
+        "regular_price": "700",
+        "sale_price": "700",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 85718,
+      "sku": "PRBAT",
+      "name": "Battery for F1 Pro Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/battery-for-f1-pro/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "2000",
+        "regular_price": "2000",
+        "sale_price": "2000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84935,
+      "sku": "CDR",
+      "name": "F1 Pro Cedar &#8211; Rugged Dumbphone with Talk Only",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-cedar-rugged-dumbphone-with-talk-only/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84934,
+      "sku": "OAK",
+      "name": "F1 Pro Oak &#8211; Rugged Dumbphone without Media",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-oak-rugged-dumbphone-tools-without-media/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84929,
+      "sku": "BRC",
+      "name": "F1 Pro Birch &#8211; Rugged Dumbphone with Limited Audio",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-birch-rugged-dumbphone-with-limited-audio/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84927,
+      "sku": "RWD",
+      "name": "F1 Pro Redwood &#8211; Rugged Classic Flip Phone",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-redwood-rugged-dumbphone-classic-flip-phone/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84926,
+      "sku": "CPS",
+      "name": "F1 Pro Cypress &#8211; Rugged Dumbphone with Hotspot",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-cypress-rugged-dumbphone-classic-with-hotspot/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84924,
+      "sku": "MPL",
+      "name": "F1 Pro Maple &#8211; Rugged Dumbphone with Navigation, Weather, and Hotspot",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-maple-rugged-dumbphone-with-navigation-hotspot/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 84923,
+      "sku": "HCK",
+      "name": "F1 Pro Hickory &#8211; Rugged Dumbphone with Waze",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-pro-hickory-rugged-dumbphone-with-waze/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "35900",
+        "regular_price": "35900",
+        "sale_price": "35900",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 68822,
+      "sku": "DC",
+      "name": "Device Claim",
+      "permalink": "https://sunbeamwireless.com/product/device-claim/",
+      "categories": [
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        },
+        {
+          "id": 64,
+          "name": "Sunbeam Wireless Services",
+          "slug": "services",
+          "link": "https://sunbeamwireless.com/product-category/services/"
+        }
+      ],
+      "prices": {
+        "price": "0",
+        "regular_price": "0",
+        "sale_price": "0",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 3953,
+      "sku": "PCC",
+      "name": "Canvas Case for F1 Flip Phones",
+      "permalink": "https://sunbeamwireless.com/product/canvas-case-for-f1-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1400",
+        "regular_price": "1400",
+        "sale_price": "1400",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 3827,
+      "sku": "F1PSS-1",
+      "name": "Sunbeam Premium",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-premium-service/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        },
+        {
+          "id": 64,
+          "name": "Sunbeam Wireless Services",
+          "slug": "services",
+          "link": "https://sunbeamwireless.com/product-category/services/"
+        }
+      ],
+      "prices": {
+        "price": "0",
+        "regular_price": "0",
+        "sale_price": "0",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": false,
+      "type": "simple"
+    },
+    {
+      "id": 2249,
+      "sku": "32SD",
+      "name": "32 GB SD Card with Preinstalled Map Data",
+      "permalink": "https://sunbeamwireless.com/product/32-gb-sd-card-with-preinstalled-map-data/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "2000",
+        "regular_price": "2000",
+        "sale_price": "2000",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 2234,
+      "sku": "HRZBT",
+      "name": "Battery for F1 and F1 Horizon Flip Phones (Updated 1750mAh Capacity)",
+      "permalink": "https://sunbeamwireless.com/product/battery-for-f1-and-f1-horizon-flip-phones/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1500",
+        "regular_price": "1500",
+        "sale_price": "1500",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 2198,
+      "sku": "QDCC",
+      "name": "Quick Disconnect USB Charge Cable",
+      "permalink": "https://sunbeamwireless.com/product/quick-disconnect-usb-charge-cable-2/",
+      "categories": [
+        {
+          "id": 103,
+          "name": "F1 Horizon Phones and Accessories",
+          "slug": "f1-horizon-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-horizon-phones-and-accessories/"
+        },
+        {
+          "id": 101,
+          "name": "F1 Pro Phones and Accessories",
+          "slug": "f1-pro-phones-and-accessories",
+          "link": "https://sunbeamwireless.com/product-category/f1-pro-phones-and-accessories/"
+        },
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "1400",
+        "regular_price": "1400",
+        "sale_price": "1400",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 1929,
+      "sku": "F1ORCV",
+      "name": "F1 Orchid &#8211; Discontinued",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-orchid/",
+      "categories": [
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "19500",
+        "regular_price": "19500",
+        "sale_price": "19500",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 1918,
+      "sku": "F1DSYV",
+      "name": "F1 Daisy &#8211; Discontinued",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-daisy/",
+      "categories": [
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "19500",
+        "regular_price": "19500",
+        "sale_price": "19500",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    },
+    {
+      "id": 1881,
+      "sku": "F1DDLV",
+      "name": "F1 Dandelion &#8211; Discontinued",
+      "permalink": "https://sunbeamwireless.com/product/sunbeam-f1-dandelion/",
+      "categories": [
+        {
+          "id": 102,
+          "name": "Original F1 Accessories",
+          "slug": "original-f1-accessories",
+          "link": "https://sunbeamwireless.com/product-category/original-f1-accessories/"
+        }
+      ],
+      "prices": {
+        "price": "19500",
+        "regular_price": "19500",
+        "sale_price": "19500",
+        "price_range": null,
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "currency_minor_unit": 2,
+        "currency_decimal_separator": ".",
+        "currency_thousand_separator": ",",
+        "currency_prefix": "$",
+        "currency_suffix": ""
+      },
+      "is_purchasable": true,
+      "type": "simple"
+    }
+  ],
+  "accepted_handset_skus": [
+    "ASN",
+    "BBD",
+    "BLJ-1",
+    "BRC",
+    "CDL",
+    "CDR",
+    "CHD",
+    "CPS",
+    "DVE",
+    "EGL-1",
+    "ELM",
+    "EMRLD",
+    "FCH",
+    "FLC",
+    "HCK",
+    "JNP-1",
+    "JSPR",
+    "LRK",
+    "MPL",
+    "OAK",
+    "PINE-1",
+    "PRL",
+    "RBN",
+    "RBY",
+    "RWD",
+    "SPR",
+    "SWN",
+    "WLW-1",
+    "WRN"
+  ]
+}

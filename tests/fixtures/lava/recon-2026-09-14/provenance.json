@@ -1,0 +1,68 @@
+[
+  {
+    "slug": "a1-2025",
+    "url": "https://lavamobiles.com/featurephones/a1-2025",
+    "response_sha256": "d4610b941b7c6e2286fa05e0a6892fc11edaa033b50b74c9e617becd15a48e99",
+    "captured_at": "2026-09-14T06:51:34.563891+00:00"
+  },
+  {
+    "slug": "a1-josh-21",
+    "url": "https://lavamobiles.com/featurephones/a1-josh-21",
+    "response_sha256": "74808c70f6338fde36c076fbb376eaa487d99cca1f93c00e6597155fd0cae393",
+    "captured_at": "2026-09-14T06:51:35.011631+00:00"
+  },
+  {
+    "slug": "a1-vibe",
+    "url": "https://lavamobiles.com/featurephones/a1-vibe",
+    "response_sha256": "08873f8e3b2dd464f58174d56e952257359e848ccb13c2508c79d2f37657b500",
+    "captured_at": "2026-09-14T06:51:35.460667+00:00"
+  },
+  {
+    "slug": "a3-torch",
+    "url": "https://lavamobiles.com/featurephones/a3-torch",
+    "response_sha256": "cb0496172a993734ff2968fc79f1b4742b9c6ccad7f2e244f3c23d8fcf785718",
+    "captured_at": "2026-09-14T06:51:35.907514+00:00"
+  },
+  {
+    "slug": "a3-vibe",
+    "url": "https://lavamobiles.com/featurephones/a3-vibe",
+    "response_sha256": "3f182c47cab5b7cbf2958233c57fe4ec56005badd7402b962345105a34f74a4e",
+    "captured_at": "2026-09-14T06:51:36.360511+00:00"
+  },
+  {
+    "slug": "a5-2025",
+    "url": "https://lavamobiles.com/featurephones/a5-2025",
+    "response_sha256": "b6ff7062cf7b759d46ec1ba3d992c7d6eb386c5627ff522517f9a8d50ffb71c8",
+    "captured_at": "2026-09-14T06:51:36.805296+00:00"
+  },
+  {
+    "slug": "a5-23",
+    "url": "https://lavamobiles.com/featurephones/a5-23",
+    "response_sha256": "3d3ea9dafc89af1a78c3c146663924cb2b731e01836bdcaef978b91dd2b7f01d",
+    "captured_at": "2026-09-14T06:51:37.241058+00:00"
+  },
+  {
+    "slug": "a7-torch",
+    "url": "https://lavamobiles.com/featurephones/a7-torch",
+    "response_sha256": "7a4c3abb179f4ebac0a08b32bc6e56cf09604949fe1219a9e6e41199fb7a9888",
+    "captured_at": "2026-09-14T06:51:37.671758+00:00"
+  },
+  {
+    "slug": "gem-power",
+    "url": "https://lavamobiles.com/featurephones/gem-power",
+    "response_sha256": "a9f95186da7520e90476441b5af986df41852b34183d437fd4ee2e610b9d4c37",
+    "captured_at": "2026-09-14T06:51:38.115486+00:00"
+  },
+  {
+    "slug": "hero-shakti-2025",
+    "url": "https://lavamobiles.com/featurephones/hero-shakti-2025",
+    "response_sha256": "76a372b891141e98a3f8a47c70bc7575b1a0bf0e1d952921830b690edc4186bc",
+    "captured_at": "2026-09-14T06:51:38.563977+00:00"
+  },
+  {
+    "slug": "hero600-pluse",
+    "url": "https://lavamobiles.com/featurephones/hero600-pluse",
+    "response_sha256": "1825fe249670c326f370adf385d44bb1e6e41ce4c30bfc72ff382d2b815a4f59",
+    "captured_at": "2026-09-14T06:51:38.995907+00:00"
+  }
+]

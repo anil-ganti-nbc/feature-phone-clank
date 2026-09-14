@@ -34,14 +34,11 @@
 #
 # lava-india promoted 2026-09-05 by explicit operator decision (maturity
 # override; the promotion queue was not re-run). Its maturity was being held
-# by a HEALTH problem, not by missing evidence: 3 whole-run ReadTimeouts in
-# 50 natural cycles (Aug 22, Aug 23, Aug 28), because its local HttpFetcher
-# predates the 915f908 hmd fetcher repair (single attempt, body-read outside
-# try). That health state is UNCHANGED and still honest — promotion did not
-# repair the fetcher and must not be read as declaring it healthy. A
-# transport failure remains an isolated per-source failed run (run() never
-# raises), never state corruption. The smallest real repair is still: port
-# the shared/repaired fetcher, re-soak, re-review.
+# by historical HEALTH evidence: 3 whole-run ReadTimeouts in 50 natural
+# cycles. The source-local transport repair was implemented in d2d8055
+# (bounded retries, body read inside try), independently of promotion.
+# Preserve pre-fix soak attribution; current runtime qualification must be
+# verified separately and is not proved by allowlist membership.
 # Known accepted caveat for the five promoted sources: their local
 # HttpFetchers share the same single-attempt structure pre-repair hmd had;
 # zero transport failures observed for these five across their soaks, and a
