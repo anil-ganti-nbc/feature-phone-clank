@@ -89,8 +89,10 @@ class Discovery(BaseModel):
     observed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def content_hash(self) -> str:
-        """Identity-independent fingerprint of everything that should trigger
-        a change event. Observation-only fields (`observed_at`, `raw`) are
+        """Identity-independent fingerprint of comparable observed state.
+        A changed hash admits comparison; editorial policy decides whether
+        an event follows (top-level price alone has no alert policy).
+        Observation-only fields (`observed_at`, `raw`) are
         excluded so a re-fetch of unchanged content never looks like a
         change. `spec_completeness` IS included: a product going from
         incomplete to complete specs (HMD finally publishing them) is itself
@@ -144,6 +146,7 @@ class Event(BaseModel):
     detected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     previous_observation_id: int | None = None
     current_observation_id: int | None = None
+    transition_occurrence_id: int | None = None
     changed_fields: list[FieldChange] = Field(default_factory=list)
 
     alert_level: AlertLevel
@@ -152,8 +155,9 @@ class Event(BaseModel):
 
     def dedup_key(self) -> str:
         """Deterministic identity for this exact event: which product,
-        which kind of change, between which two observations. Re-deriving
-        an event from the same observation transition always produces the
+        which kind of change, between which two content observations and,
+        for chronology events, which durable sighting. Re-deriving
+        an event from the same persisted transition always produces the
         same key — the DB's UNIQUE constraint on this is the actual
         duplicate-protection mechanism (brief section 13), not a timestamp
         check."""
@@ -161,6 +165,10 @@ class Event(BaseModel):
             f"{self.product_key}|{self.event_type.value}|"
             f"{self.previous_observation_id or 0}|{self.current_observation_id or 0}"
         )
+        # Keep historical event keys unchanged. New chronology events distinguish
+        # recurring A->B transitions by their durable successful sighting.
+        if self.transition_occurrence_id is not None:
+            basis += f"|sighting:{self.transition_occurrence_id}"
         return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:32]
 
 

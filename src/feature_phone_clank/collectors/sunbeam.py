@@ -1,8 +1,8 @@
-"""Sunbeam Wireless collector (Wave 2, EXPERIMENTAL ONLY, source_key
+"""Sunbeam Wireless collector (source_key
 "sunbeam-f1-us").
 
-Not in `config/scope.yaml` - only `run_experimental()` may execute this
-collector; it must never reach the production database.
+Production-authorised by `config/scope.yaml`; experimental runs remain
+available against an isolated store.
 
 Sunbeam Wireless runs WooCommerce and exposes the documented public Store
 API (wp-json/wc/store/v1/products), verified live 2026-08-27: HTTP 200,
@@ -44,7 +44,9 @@ import re
 import time
 import unicodedata
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel
 
@@ -105,10 +107,19 @@ def _clean_name(raw: str) -> str:
 FLOOR_ACCEPTED_PHONES = 6
 
 
-def classify_product(name: str, category_names: list[str]) -> tuple[str, dict]:
+def classify_product(name: str, category_names: list[str], *, permalink: str = "", sku: str = "") -> tuple[str, dict]:
     """Deterministic scope decision. 'feature_phone' | 'rejected' |
     'ambiguous'."""
     evidence = {"categories": category_names}
+    if SERVICE_CATEGORY in category_names and sku == "F1PSS-1":
+        try:
+            url = urlsplit(permalink)
+        except ValueError:
+            return "ambiguous", {**evidence, "reason": "service SKU with malformed first-party URL"}
+        if (url.hostname == "sunbeamwireless.com"
+                and url.path.rstrip("/") == "/product/sunbeam-f1-premium-service"):
+            return "rejected", {**evidence, "reason": "first-party Premium service SKU and URL",
+                                "sku": sku, "permalink": permalink}
     if SERVICE_CATEGORY in category_names and len(category_names) == 1:
         return "ambiguous", {**evidence, "reason": "service-only product"}
 
@@ -129,6 +140,31 @@ def classify_product(name: str, category_names: list[str]) -> tuple[str, dict]:
         return "ambiguous", {**evidence, "reason": "legacy-original-F1-only placement"}
 
     return "feature_phone", {**evidence, "evidence": "listed in Sunbeam's own F1 phone categories"}
+
+
+def _parse_price(prices: dict) -> float | None:
+    """Store API price is a minor-unit numeric string; ranges are not scalar prices.
+
+    Legacy payloads lacking currency_minor_unit retain the previous
+    two-decimal interpretation. Invalid explicit units fail
+    honestly rather than silently assuming cents.
+    """
+    raw = prices.get("price")
+    unit = prices.get("currency_minor_unit", 2)
+    if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
+        return None
+    if isinstance(unit, bool) or not isinstance(unit, int) or not 0 <= unit <= 9:
+        return None
+    if isinstance(raw, str) and not re.fullmatch(r"\d+(?:\.\d+)?", raw.strip()):
+        return None
+    try:
+        value = Decimal(str(raw).strip()).scaleb(-unit)
+        if not value.is_finite() or value < 0:
+            return None
+        converted = float(value)
+        return converted if converted != float("inf") else None
+    except (InvalidOperation, ValueError, OverflowError):
+        return None
 
 
 class SunbeamCollector(BaseCollector):
@@ -173,7 +209,7 @@ class SunbeamCollector(BaseCollector):
 
             key_for_log = sku or name[:40]
 
-            classification, evidence = classify_product(name, cats)
+            classification, evidence = classify_product(name, cats, permalink=permalink, sku=sku)
             if classification != "feature_phone":
                 self._log(key_for_log, permalink or STORE_API_URL, classification, evidence)
                 continue
@@ -189,11 +225,10 @@ class SunbeamCollector(BaseCollector):
                 availability = "InStock" if item["is_purchasable"] else "OutOfStock"
 
             p = item.get("prices") or {}
-            prices = []
+            if not isinstance(p, dict):
+                p = {}
             raw_price = p.get("price")
-            if isinstance(raw_price, (int, float)):
-                prices.append(float(raw_price))
-            price = (min(prices) / 100.0) if prices else None  # Woo minor units
+            price = _parse_price(p)
 
             currency = None
             pc = p.get("currency_code") or p.get("currency_symbol")
@@ -201,8 +236,8 @@ class SunbeamCollector(BaseCollector):
                 currency = pc
 
             fields: dict = {}
-            if prices:
-                fields["price_minor_unit_raw"] = [raw_price] if raw_price else []
+            if price is not None:
+                fields["price_minor_unit_raw"] = [raw_price]
 
             discoveries.append(Discovery(
                 source_key=self.source_key,
@@ -224,6 +259,7 @@ class SunbeamCollector(BaseCollector):
                     "type": item.get("type"),
                     "classification_evidence": evidence,
                     "store_payload_url": STORE_API_URL,
+                    "store_prices": p,
                 },
             ))
 

@@ -1,8 +1,8 @@
-"""Alcatel feature-phone catalogue collector (Wave 2, EXPERIMENTAL ONLY,
+"""Alcatel feature-phone catalogue collector (
 source_key "tcl-alcatel-global").
 
-Not in `config/scope.yaml` - only `run_experimental()` may execute this
-collector, and always against an experimental store.
+Production-authorised by `config/scope.yaml`; experimental runs remain
+available against an isolated store.
 
 Brand/ownership facts (verified live 2026-08-27): TCL Communication owns
 the Alcatel brand. The historical alcatelmobile.com storefront is a live

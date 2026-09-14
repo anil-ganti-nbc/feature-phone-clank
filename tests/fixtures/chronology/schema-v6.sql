@@ -1,4 +1,4 @@
--- FEATURE-01 schema v7. Unique content plus chronological sightings.
+-- FEATURE-01 schema v4. Append-only observations; only workflow columns mutate.
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version INTEGER PRIMARY KEY,
@@ -63,8 +63,7 @@ CREATE TABLE IF NOT EXISTS events (
     alert_level TEXT NOT NULL,        -- AlertLevel
     confidence TEXT NOT NULL,         -- Confidence
     detected_at TEXT NOT NULL DEFAULT (datetime('now')),
-    meta_json TEXT NOT NULL DEFAULT '{}',
-    transition_occurrence_id INTEGER REFERENCES observation_occurrences(id)
+    meta_json TEXT NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_events_product ON events(product_id, detected_at);
 CREATE INDEX IF NOT EXISTS idx_events_alert_level ON events(alert_level, detected_at);
@@ -83,25 +82,9 @@ CREATE TABLE IF NOT EXISTS collector_runs (
     qualification_scope TEXT,
     qualification_epoch_id INTEGER,
     qualification_material_identity TEXT,
-    qualification_gate_status TEXT NOT NULL DEFAULT 'UNKNOWN',
-    persistence_stats_json TEXT -- successful persistence receipt; NULL for legacy/unprocessed runs
+    qualification_gate_status TEXT NOT NULL DEFAULT 'UNKNOWN'
 );
 CREATE INDEX IF NOT EXISTS idx_runs_source ON collector_runs(source_key, started_at);
-
-CREATE TABLE IF NOT EXISTS observation_occurrences (
-    id INTEGER PRIMARY KEY,
-    product_id INTEGER NOT NULL REFERENCES products(id),
-    observation_id INTEGER NOT NULL REFERENCES observations(id),
-    run_id INTEGER REFERENCES collector_runs(id),
-    observed_at TEXT NOT NULL,
-    UNIQUE(product_id, run_id)
-);
-CREATE TABLE IF NOT EXISTS current_product_observations (
-    product_id INTEGER PRIMARY KEY REFERENCES products(id),
-    observation_id INTEGER NOT NULL REFERENCES observations(id),
-    occurrence_id INTEGER REFERENCES observation_occurrences(id),
-    basis TEXT NOT NULL -- LEGACY_LAST_UNIQUE_CONTENT | SIGHTING
-);
 
 -- Qualification evidence is deliberately separate from the continuity/data-
 -- loss registry.  Epoch rows are append-only lineage; the current row per

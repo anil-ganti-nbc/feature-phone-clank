@@ -24,7 +24,7 @@ from feature_phone_clank.core.models import ChangeType, AlertLevel, Confidence, 
 from feature_phone_clank.dashboard import render, serve
 from feature_phone_clank.local_collection import LocalCollectionController
 from feature_phone_clank.providers.qc_store import QcArchiveStore
-from tests.conftest import make_discovery
+from conftest import make_discovery
 
 
 @pytest.fixture

@@ -1,11 +1,13 @@
 # Ticket: lava-india — port the resilient fetch pattern (transport repair)
 
-Status: BLOCKED from production promotion (2026-08-30 final review). Planning artefact — no
-implementation yet.
+Status: IMPLEMENTED in `d2d8055` (source-local repair and mocked transport tests).
+`lava-india` is production-authorised in `config/scope.yaml` by the September 5
+operator decision. This ticket preserves the original failure and soak requirements;
+implementation and promotion do not establish current host qualification.
 
 ## Problem statement
 
-`lava-india`'s collector carries its own `HttpFetcher` that predates the hmd fetcher repair
+Before `d2d8055`, `lava-india` carried its own `HttpFetcher` that predated the hmd fetcher repair
 (`915f908`): single attempt, fixed 15s timeout, response body read **outside** the protected
 error path. One mid-transfer stall escapes as `ReadTimeout`, propagates through `collect()`,
 and fails the whole run, losing every successful fetch made earlier in the run.
@@ -20,7 +22,7 @@ and fails the whole run, losing every successful fetch made earlier in the run.
 
 ## Root cause
 
-Lava's fetcher was forked from the same early pattern hmd had, and never received the repair.
+Lava's pre-fix fetcher was forked from the same early pattern hmd had.
 Not shared code: `collectors/lava.py` defines its own `Fetcher`/`HttpFetcher` (~lines 78–135),
 separate from `collectors/hmd.py`.
 
@@ -66,8 +68,9 @@ trailing qualification window; catalogue count stable (~11 products); zero false
 
 ## Production exit condition
 
-Standard re-review under the existing policy, then add `lava-india` to `config/scope.yaml`
-`production_collectors` via the normal reviewed commit + image build + `.deployed-id` path.
+Historical requirement: standard re-review under the existing policy before promotion.
+The operator subsequently authorised promotion explicitly; the allowlist now includes
+Lava. Current host revision and post-fix qualification remain runtime evidence questions.
 
 ## Rollback considerations
 

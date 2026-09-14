@@ -161,6 +161,7 @@ def _run(
         store, collector.source_key, source_id, discoveries,
         classification_transitions, is_baseline,
         notify=notifier.enqueue if notifier is not None else None,
+        run_id=run_id,
     )
     store.run_finished(
         run_id, "ok", stats, result.errors,

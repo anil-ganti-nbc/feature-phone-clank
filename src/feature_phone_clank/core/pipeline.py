@@ -63,6 +63,7 @@ def _build_event(
     previous_observation_id: int | None, current_observation_id: int | None,
     changed_fields: list[FieldChange], alert_level: AlertLevel, confidence: Confidence,
     meta: dict | None = None,
+    transition_occurrence_id: int | None = None,
 ) -> Event:
     """`d` is the fresh Discovery when available (new/changed product);
     `product_row` is the DB row to fall back to for identity fields when
@@ -83,6 +84,7 @@ def _build_event(
         event_type=event_type, previous_observation_id=previous_observation_id,
         current_observation_id=current_observation_id, changed_fields=changed_fields,
         alert_level=alert_level, confidence=confidence, meta=meta or {},
+        transition_occurrence_id=transition_occurrence_id,
     )
 
 
@@ -117,6 +119,30 @@ def process_run(
     store, source_key: str, source_id: int, discoveries: list[Discovery],
     classification_transitions: list[ClassificationTransition], is_baseline: bool,
     notify: NotifyFn | None = None,
+    *, run_id: int | None = None,
+) -> dict:
+    """Commit current state, sightings, events and enqueue as one unit.
+
+    A durable run receipt makes exact successful-run replay a no-op, even
+    if later runs have occurred. Uncommitted crash/failure rolls everything
+    back and can retry without losing the transition.
+    """
+    with store.transaction():
+        if run_id is not None:
+            prior = store.processed_run_stats(run_id, source_key)
+            if prior is not None:
+                return prior
+        stats = _process_run(store, source_key, source_id, discoveries,
+                             classification_transitions, is_baseline, notify, run_id=run_id)
+        if run_id is not None:
+            store.record_processed_run(run_id, stats)
+        return stats
+
+
+def _process_run(
+    store, source_key: str, source_id: int, discoveries: list[Discovery],
+    classification_transitions: list[ClassificationTransition], is_baseline: bool,
+    notify: NotifyFn | None = None, *, run_id: int | None = None,
 ) -> dict:
     """The Stage 3 replacement for the old `store.ingest()` call in
     runner.py. Only ever invoked for a run whose overall status is 'ok'
@@ -153,7 +179,7 @@ def process_run(
 
         if existing is None:
             product_id = store.create_product(source_id, d)
-            obs_id, _ = store.record_observation_get_id(product_id, d)
+            obs_id, _ = store.record_observation_get_id(product_id, d, run_id=run_id)
             stats["new_products"] += 1
             seen_product_ids.add(product_id)
             if not is_baseline:
@@ -165,6 +191,7 @@ def process_run(
                     previous_observation_id=None, current_observation_id=obs_id,
                     changed_fields=[], alert_level=AlertLevel.HIGH, confidence=Confidence.HIGH,
                     meta=meta,
+                    transition_occurrence_id=store.latest_observation(product_id)["occurrence_id"],
                 )
                 _record_and_notify(store, event, notify, stats)
             continue
@@ -188,7 +215,7 @@ def process_run(
         if existing["model_number"] and d.model_number and existing["model_number"] != d.model_number:
             prior_latest = store.latest_observation(product_id)
             store.touch_product(product_id, d.url)
-            obs_id, is_new_obs = store.record_observation_get_id(product_id, d)
+            obs_id, is_new_obs = store.record_observation_get_id(product_id, d, run_id=run_id)
             stats["updated_products"] += 1
             stats["identity_anomalies"] += 1
             if not is_baseline and is_new_obs:
@@ -202,6 +229,7 @@ def process_run(
                     )],
                     alert_level=AlertLevel.HIGH, confidence=Confidence.HIGH,
                     meta={"reason": "canonical URL now reports a different SKU/model number"},
+                    transition_occurrence_id=store.latest_observation(product_id)["occurrence_id"],
                 )
                 _record_and_notify(store, event, notify, stats)
             continue
@@ -210,7 +238,7 @@ def process_run(
         store.touch_product(product_id, d.url)
         stats["updated_products"] += 1
 
-        obs_id, is_new_obs = store.record_observation_get_id(product_id, d)
+        obs_id, is_new_obs = store.record_observation_get_id(product_id, d, run_id=run_id)
         if not is_new_obs or prev_obs is None:
             stats["unchanged_observations"] += 1
             continue
@@ -250,6 +278,7 @@ def process_run(
         # both incomplete: nothing usable to diff, no event.
 
         if event is not None and not is_baseline:
+            event.transition_occurrence_id = store.latest_observation(product_id)["occurrence_id"]
             _record_and_notify(store, event, notify, stats)
 
     # Classification demotions on EXISTING products (brief section 11):
@@ -284,13 +313,15 @@ def process_run(
             if absences >= REMOVAL_CONFIRMATION_THRESHOLD:
                 store.mark_removed(row["id"])
                 stats["removed_products"] += 1
+                last_sighting = store.latest_observation(row["id"])
                 event = _build_event(
                     d=None, product_row=row, event_type=ChangeType.PRODUCT_REMOVED,
-                    previous_observation_id=(store.latest_observation(row["id"]) or {"id": None})["id"],
+                    previous_observation_id=last_sighting["id"] if last_sighting else None,
                     current_observation_id=None, changed_fields=[],
                     alert_level=AlertLevel.MEDIUM, confidence=Confidence.MEDIUM,
                     meta={"consecutive_absences": absences,
                           "threshold": REMOVAL_CONFIRMATION_THRESHOLD},
+                    transition_occurrence_id=last_sighting["occurrence_id"] if last_sighting else None,
                 )
                 _record_and_notify(store, event, notify, stats)
 

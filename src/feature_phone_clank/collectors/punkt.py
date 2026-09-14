@@ -1,7 +1,7 @@
-"""Punkt collector (Stage F, EXPERIMENTAL ONLY, source_key "punkt-ch").
+"""Punkt collector (source_key "punkt-ch").
 
-Not in `config/scope.yaml` — `run_experimental()` is the only way to run
-this collector; it must never reach the production database.
+Production-authorised by `config/scope.yaml`; experimental runs remain
+available against an isolated store.
 
 punkt.ch is Punkt.'s own first-party storefront (Shopify) and server-
 renders schema.org JSON-LD on every product page — genuinely tier 2 of

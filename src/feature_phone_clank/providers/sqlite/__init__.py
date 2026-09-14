@@ -103,6 +103,21 @@ _MIGRATIONS: dict[int, list[str]] = {
         "key TEXT PRIMARY KEY, value TEXT NOT NULL, "
         "updated_at TEXT NOT NULL DEFAULT (datetime('now')))",
     ],
+    7: [
+        "CREATE TABLE IF NOT EXISTS observation_occurrences ("
+        "id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id), "
+        "observation_id INTEGER NOT NULL REFERENCES observations(id), "
+        "run_id INTEGER REFERENCES collector_runs(id), observed_at TEXT NOT NULL, "
+        "UNIQUE(product_id, run_id))",
+        "CREATE TABLE IF NOT EXISTS current_product_observations ("
+        "product_id INTEGER PRIMARY KEY REFERENCES products(id), "
+        "observation_id INTEGER NOT NULL REFERENCES observations(id), "
+        "occurrence_id INTEGER REFERENCES observation_occurrences(id), basis TEXT NOT NULL)",
+        "INSERT OR IGNORE INTO current_product_observations(product_id, observation_id, basis) "
+        "SELECT product_id, MAX(id), 'LEGACY_LAST_UNIQUE_CONTENT' FROM observations GROUP BY product_id",
+        "ALTER TABLE events ADD COLUMN transition_occurrence_id INTEGER REFERENCES observation_occurrences(id)",
+        "ALTER TABLE collector_runs ADD COLUMN persistence_stats_json TEXT",
+    ],
 }
 
 
@@ -255,8 +270,8 @@ class SqliteStore:
     def transaction(self):
         """Make several writes durable together, or not at all.
 
-        Exists for one specific invariant: an event and the notification
-        outbox row it implies must commit atomically. Before this,
+        Current state, its sighting, events, outbox and successful-run
+        receipt must commit atomically. Before this,
         `record_event` committed on its own and the enqueue committed
         separately, so a crash between them left a committed event with no
         outbox row — and because event insertion is deduplicated by
@@ -269,14 +284,14 @@ class SqliteStore:
         self._tx_depth += 1
         try:
             yield self
+            if self._tx_depth == 1:
+                self.db.commit()
         except BaseException:
             if self._tx_depth == 1:
                 self.db.rollback()
             raise
         finally:
             self._tx_depth -= 1
-        if self._tx_depth == 0:
-            self.db.commit()
 
     def schema_version(self) -> int:
         return self.db.execute(
@@ -370,9 +385,9 @@ class SqliteStore:
         return self.db.execute(
             "SELECT p.product_key, p.model, p.url, o.spec_completeness, o.observed_at "
             "FROM products p JOIN sources s ON p.source_id = s.id "
-            "JOIN observations o ON o.id = ("
-            "  SELECT id FROM observations WHERE product_id = p.id ORDER BY id DESC LIMIT 1"
-            ") WHERE s.source_key = ? AND o.spec_completeness = 'incomplete'",
+            "JOIN current_product_observations c ON c.product_id = p.id "
+            "JOIN observations o ON o.id = c.observation_id "
+            "WHERE s.source_key = ? AND o.spec_completeness = 'incomplete'",
             (source_key,),
         ).fetchall()
 
@@ -388,7 +403,7 @@ class SqliteStore:
             (source_id, d.product_key, d.manufacturer, d.model,
              d.model_number, d.region, d.url),
         )
-        self.db.commit()
+        self._maybe_commit()
         return self.get_product(d.product_key)["id"]
 
     def touch_product(self, product_id: int, url: str) -> None:
@@ -401,7 +416,7 @@ class SqliteStore:
             "url=?, consecutive_absences=0 WHERE id=?",
             (url, product_id),
         )
-        self.db.commit()
+        self._maybe_commit()
 
     def active_products_for_source(self, source_id: int) -> list[sqlite3.Row]:
         return self.db.execute(
@@ -412,42 +427,84 @@ class SqliteStore:
         self.db.execute(
             "UPDATE products SET consecutive_absences=? WHERE id=?", (count, product_id)
         )
-        self.db.commit()
+        self._maybe_commit()
 
     def mark_removed(self, product_id: int) -> None:
         self.db.execute("UPDATE products SET status='removed' WHERE id=?", (product_id,))
-        self.db.commit()
+        self._maybe_commit()
 
     # -- observations -------------------------------------------------------
 
     def latest_observation(self, product_id: int) -> sqlite3.Row | None:
         return self.db.execute(
-            "SELECT * FROM observations WHERE product_id=? ORDER BY id DESC LIMIT 1",
+            "SELECT o.*, c.occurrence_id, c.basis AS chronology_basis, "
+            "s.observed_at AS last_sighted_at FROM current_product_observations c "
+            "JOIN observations o ON o.id=c.observation_id "
+            "LEFT JOIN observation_occurrences s ON s.id=c.occurrence_id WHERE c.product_id=?",
             (product_id,),
         ).fetchone()
 
-    def record_observation_get_id(self, product_id: int, d: Discovery) -> tuple[int, bool]:
-        """Append an observation if its content differs from any existing
-        one for this product; return (observation_id, is_new). `INSERT OR
-        IGNORE` (rather than a bare INSERT after a pre-check) so a value
-        that reverts to an exact historical state — matching an older row's
-        content_hash, not just the latest — can never raise a UNIQUE
-        constraint violation; it just resolves to that existing row with
-        is_new=False."""
+    def record_observation_get_id(
+        self, product_id: int, d: Discovery, *, run_id: int | None = None,
+    ) -> tuple[int, bool]:
+        """Reuse canonical content, append a sighting, advance current state.
+
+        The boolean means a chronological state change, NOT new unique
+        content. All writes participate in the enclosing pipeline transaction.
+        Direct callers get the same atomic guarantee for this operation.
+        """
+        with self.transaction():
+            return self._record_sighting(product_id, d, run_id=run_id)
+
+    def _record_sighting(self, product_id: int, d: Discovery, *, run_id: int | None) -> tuple[int, bool]:
+        previous = self.latest_observation(product_id)
         content_hash = d.content_hash()
-        cur = self.db.execute(
+        self.db.execute(
             "INSERT OR IGNORE INTO observations(product_id, content_hash, fields_json, "
             "spec_completeness, price, currency, availability) VALUES (?,?,?,?,?,?,?)",
             (product_id, content_hash, json.dumps(d.fields, default=str),
              d.spec_completeness, d.price, d.currency, d.availability),
         )
-        self.db.commit()
-        is_new = cur.rowcount > 0
         row = self.db.execute(
             "SELECT id FROM observations WHERE product_id=? AND content_hash=?",
             (product_id, content_hash),
         ).fetchone()
-        return row["id"], is_new
+        obs_id = row["id"]
+        if run_id is not None:
+            existing = self.db.execute(
+                "SELECT observation_id FROM observation_occurrences WHERE product_id=? AND run_id=?",
+                (product_id, run_id),
+            ).fetchone()
+            if existing is not None:
+                if existing["observation_id"] != obs_id:
+                    raise ValueError("a persisted run cannot be replayed with different product content")
+                return obs_id, False
+        occurrence = self.db.execute(
+            "INSERT INTO observation_occurrences(product_id, observation_id, run_id, observed_at) VALUES (?,?,?,?)",
+            (product_id, obs_id, run_id, d.observed_at.isoformat()),
+        ).lastrowid
+        self.db.execute(
+            "INSERT INTO current_product_observations(product_id, observation_id, occurrence_id, basis) "
+            "VALUES (?,?,?,'SIGHTING') ON CONFLICT(product_id) DO UPDATE SET "
+            "observation_id=excluded.observation_id, occurrence_id=excluded.occurrence_id, basis='SIGHTING'",
+            (product_id, obs_id, occurrence),
+        )
+        return obs_id, previous is None or previous["content_hash"] != content_hash
+
+    def processed_run_stats(self, run_id: int, source_key: str) -> dict | None:
+        row = self.db.execute(
+            "SELECT source_key, persistence_stats_json FROM collector_runs WHERE id=?", (run_id,),
+        ).fetchone()
+        if row is None or row["source_key"] != source_key:
+            raise ValueError("persistence run must belong to this source")
+        return json.loads(row["persistence_stats_json"]) if row["persistence_stats_json"] is not None else None
+
+    def record_processed_run(self, run_id: int, stats: dict) -> None:
+        self.db.execute(
+            "UPDATE collector_runs SET persistence_stats_json=? WHERE id=?",
+            (json.dumps(stats, default=str), run_id),
+        )
+        self._maybe_commit()
 
     # -- events ---------------------------------------------------------
 
@@ -464,14 +521,15 @@ class SqliteStore:
         cur = self.db.execute(
             "INSERT OR IGNORE INTO events(product_id, collector, event_type, "
             "changed_fields_json, previous_observation_id, current_observation_id, "
-            "dedup_key, alert_level, confidence, detected_at, meta_json) "
-            "SELECT id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM products WHERE product_key=?",
+            "dedup_key, alert_level, confidence, detected_at, meta_json, transition_occurrence_id) "
+            "SELECT id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM products WHERE product_key=?",
             (
                 event.source_key, event.event_type.value,
                 json.dumps([fc.model_dump(mode="json") for fc in event.changed_fields]),
                 event.previous_observation_id, event.current_observation_id, dedup_key,
                 event.alert_level.value, event.confidence.value,
                 event.detected_at.isoformat(), json.dumps(event.meta, default=str),
+                event.transition_occurrence_id,
                 event.product_key,
             ),
         )

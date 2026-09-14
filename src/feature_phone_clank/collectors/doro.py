@@ -1,7 +1,7 @@
-"""Doro collector (Wave 2, EXPERIMENTAL ONLY, source_key "doro-gb").
+"""Doro collector (source_key "doro-gb").
 
-Not in `config/scope.yaml` - only `run_experimental()` may execute this
-collector, and always against an experimental store.
+Production-authorised by `config/scope.yaml`; experimental runs remain
+available against an isolated store.
 
 doro.com's mobile-phones category page server-renders one `products-tile`
 per catalogue member. Each tile anchor carries first-party identity

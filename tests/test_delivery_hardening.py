@@ -649,9 +649,15 @@ def test_v6_migration_is_additive_and_preserves_delivery_history(tmp_path):
 
     con = sqlite3.connect(path)
     with con:
+        # Remove v7 too: the fixture must really be v5, not a v7 marker
+        # with a missing delivery-policy table (which correctly fails closed).
+        con.execute("ALTER TABLE events DROP COLUMN transition_occurrence_id")
+        con.execute("ALTER TABLE collector_runs DROP COLUMN persistence_stats_json")
+        con.execute("DROP TABLE current_product_observations")
+        con.execute("DROP TABLE observation_occurrences")
         con.execute("DROP TABLE delivery_policy")
         con.execute("ALTER TABLE notifications DROP COLUMN not_before")
-        con.execute("DELETE FROM schema_migrations WHERE version=6")
+        con.execute("DELETE FROM schema_migrations WHERE version>=6")
     con.close()
 
     migrated = SqliteStore(str(path))

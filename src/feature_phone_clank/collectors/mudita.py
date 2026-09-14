@@ -1,7 +1,7 @@
-"""Mudita collector (Wave 2, EXPERIMENTAL ONLY, source_key "mudita-com").
+"""Mudita collector (source_key "mudita-com").
 
-Not in `config/scope.yaml` - only `run_experimental()` may execute this
-collector, and always against an experimental store.
+Production-authorised by `config/scope.yaml`; experimental runs remain
+available against an isolated store.
 
 Mudita is a Gatsby/Contentful first-party site. Verified live 2026-08-27:
 

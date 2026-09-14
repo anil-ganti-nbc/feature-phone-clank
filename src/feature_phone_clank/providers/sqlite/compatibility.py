@@ -44,7 +44,7 @@ from enum import Enum
 # The expected persistent-state contract of THIS software version. Single
 # source of truth; `providers.sqlite` re-exports this as SCHEMA_VERSION so
 # the schema, the migrations, and the compatibility gate cannot drift apart.
-EXPECTED_SCHEMA_VERSION = 6
+EXPECTED_SCHEMA_VERSION = 7
 
 # Every table the current schema (schema.sql + applied migrations at this
 # version) must have left behind. Used to corroborate the marker: a marker
@@ -63,6 +63,8 @@ EXPECTED_TABLES = frozenset({
     "qualification_state",
     "qualification_epochs",
     "qualification_events",
+    "observation_occurrences",
+    "current_product_observations",
 })
 
 
@@ -268,6 +270,22 @@ def inspect_compatibility(
             missing_tables=missing,
             user_tables=sorted(tables),
         )
+
+    # A marker/table set alone cannot admit a half-applied chronology upgrade.
+    required_columns = {
+        "events": {"transition_occurrence_id"},
+        "collector_runs": {"persistence_stats_json"},
+        "observation_occurrences": {"id", "product_id", "observation_id", "run_id", "observed_at"},
+        "current_product_observations": {"product_id", "observation_id", "occurrence_id", "basis"},
+    }
+    for table, required in required_columns.items():
+        present = {row[1] for row in con.execute(f"PRAGMA table_info({table})")}
+        if required - present:
+            return _report(
+                StateCompatibility.PARTIAL, expected_version, observed,
+                f"v7 chronology columns missing from {table}",
+                missing_columns=sorted(required - present), user_tables=sorted(tables),
+            )
 
     return _report(
         StateCompatibility.COMPATIBLE, expected_version, observed,
