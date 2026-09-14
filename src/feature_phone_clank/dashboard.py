@@ -171,7 +171,7 @@ def render(db, controller=None, qc_db=None):
         _run_errors={}
         for _r in store.db.execute("SELECT run_id,message FROM run_errors ORDER BY id"):
             _run_errors.setdefault(_r['run_id'],[]).append(_r['message'])
-        products=store.db.execute("SELECT p.*,o.spec_completeness FROM products p LEFT JOIN observations o ON o.id=(SELECT id FROM observations WHERE product_id=p.id ORDER BY id DESC LIMIT 1) ORDER BY p.last_seen_at DESC").fetchall()
+        products=store.db.execute("SELECT p.*,o.spec_completeness FROM products p LEFT JOIN current_product_observations c ON c.product_id=p.id LEFT JOIN observations o ON o.id=c.observation_id ORDER BY p.last_seen_at DESC").fetchall()
         reviewed_ids = qc_store.reviewed_event_ids()
         recent_qc = qc_store.recent_reviews(limit=30)
     finally:

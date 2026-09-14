@@ -1,0 +1,510 @@
+[
+  {
+    "product": {
+      "id": 7,
+      "source_id": 1,
+      "product_key": "hmd-nokia:hmd-105-4g",
+      "manufacturer": "HMD",
+      "model": "HMD 105 4G",
+      "model_number": "1GF029BPH1S01",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/hmd-105-4g",
+      "status": "active",
+      "consecutive_absences": 0,
+      "first_seen_at": "2026-08-25 08:24:05",
+      "last_seen_at": "2026-09-14 05:30:06"
+    },
+    "observations": [
+      {
+        "id": 7,
+        "product_id": 7,
+        "content_hash": "f8e8b2ad0aacc9c29b4415cbff554b571324121110a66ed760597d3331673b49",
+        "fields_json": "{\"is-present\": {\"values\": [\"fm-radio-wired-&-wireless-dual-mode\", \"charger\", \"quick-start-guide\", \"removable-battery\", \"usb-type-c-cable\", \"safety-booklet\", \"user-guide\"], \"category\": \"audio\"}, \"usb-connection\": {\"values\": [\"usb-type-c\"], \"category\": \"connectivity\"}, \"features\": {\"values\": [\"qvga\", \"mp3-player\", \"polymer\"], \"category\": \"display\"}, \"os\": {\"values\": [\"s30+\"], \"category\": \"operating-system\"}, \"battery-type\": {\"values\": [\"removable\"], \"category\": \"battery-&-charging\"}, \"bluetooth\": {\"values\": [\"5-0\"], \"category\": \"connectivity\"}, \"water-resistant-ipx-grading\": {\"values\": [\"ip54-for-eur-ip52-for-rest-of-the-word\"], \"category\": \"materials\"}, \"networks\": {\"values\": [\"2g-3g-&-4g\"], \"category\": \"networks\"}, \"sim-size\": {\"values\": [\"nano-sim\"], \"category\": \"networks\"}, \"cpu\": {\"values\": [\"unisoc-t127\"], \"category\": \"platform\"}, \"network-band-lte\": {\"values\": [\"eu\"], \"category\": \"networks\"}, \"network-band-wcdma\": {\"values\": [\"eu-vn-il-anz-cn-&-india\"], \"category\": \"networks\"}, \"network-band-gsm\": {\"values\": [\"eu-vn-il-anz-cn-&-india\"], \"category\": \"networks\"}, \"ram\": {\"value\": 64, \"unit\": \"MB\"}, \"internal-storage\": {\"value\": 128, \"unit\": \"MB\"}, \"battery-capacity\": {\"value\": 1450, \"unit\": \"mAh\"}}",
+        "spec_completeness": "complete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-08-25 08:24:05"
+      },
+      {
+        "id": 46,
+        "product_id": 7,
+        "content_hash": "5aaffd4f6cf14f3ecf91e307c3ac1cde95e31ce83c916703e01f07064912253e",
+        "fields_json": "{}",
+        "spec_completeness": "incomplete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-08-27 20:38:29"
+      }
+    ],
+    "current": {
+      "source_key": "hmd-nokia",
+      "product_key": "hmd-nokia:hmd-105-4g",
+      "manufacturer": "HMD",
+      "model": "HMD 105 4G",
+      "model_number": "1GF029BPH1S01",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/hmd-105-4g",
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "fields": {
+        "is-present": {
+          "values": [
+            "fm-radio-wired-&-wireless-dual-mode",
+            "charger",
+            "quick-start-guide",
+            "removable-battery",
+            "usb-type-c-cable",
+            "safety-booklet",
+            "user-guide"
+          ],
+          "category": "audio"
+        },
+        "usb-connection": {
+          "values": [
+            "usb-type-c"
+          ],
+          "category": "connectivity"
+        },
+        "features": {
+          "values": [
+            "qvga",
+            "mp3-player",
+            "polymer"
+          ],
+          "category": "display"
+        },
+        "os": {
+          "values": [
+            "s30+"
+          ],
+          "category": "operating-system"
+        },
+        "battery-type": {
+          "values": [
+            "removable"
+          ],
+          "category": "battery-&-charging"
+        },
+        "bluetooth": {
+          "values": [
+            "5-0"
+          ],
+          "category": "connectivity"
+        },
+        "water-resistant-ipx-grading": {
+          "values": [
+            "ip54-for-eur-ip52-for-rest-of-the-word"
+          ],
+          "category": "materials"
+        },
+        "networks": {
+          "values": [
+            "2g-3g-&-4g"
+          ],
+          "category": "networks"
+        },
+        "sim-size": {
+          "values": [
+            "nano-sim"
+          ],
+          "category": "networks"
+        },
+        "cpu": {
+          "values": [
+            "unisoc-t127"
+          ],
+          "category": "platform"
+        },
+        "network-band-lte": {
+          "values": [
+            "eu"
+          ],
+          "category": "networks"
+        },
+        "network-band-wcdma": {
+          "values": [
+            "eu-vn-il-anz-cn-&-india"
+          ],
+          "category": "networks"
+        },
+        "network-band-gsm": {
+          "values": [
+            "eu-vn-il-anz-cn-&-india"
+          ],
+          "category": "networks"
+        },
+        "ram": {
+          "value": 64,
+          "unit": "MB"
+        },
+        "internal-storage": {
+          "value": 128,
+          "unit": "MB"
+        },
+        "battery-capacity": {
+          "value": 1450,
+          "unit": "mAh"
+        }
+      },
+      "spec_completeness": "complete",
+      "raw": {
+        "specs_url": "https://www.hmd.com/en_int/hmd-105-4g/specs",
+        "source_pages": [
+          "https://www.hmd.com/en_int/hmd-105-4g/specs"
+        ],
+        "skus": [
+          "1GF029BPH1S01",
+          "1GF029BPH2S01",
+          "1GF029BPH3S01"
+        ],
+        "name_source": "catalogue_card",
+        "raw_specs_h1": "HMD 105 4G",
+        "raw_specs_title": "HMD 105 4G | Tough feature phone with HD calling",
+        "raw_base_h1": null,
+        "raw_base_title": null,
+        "catalogue_card_name": "HMD 105 4G",
+        "fetch_note": null
+      },
+      "observed_at": "2026-09-14T06:51:36.787429Z"
+    }
+  },
+  {
+    "product": {
+      "id": 2,
+      "source_id": 1,
+      "product_key": "hmd-nokia:hmd-101",
+      "manufacturer": "HMD",
+      "model": "HMD 101",
+      "model_number": "AHM1906AARBK1SB",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/hmd-101",
+      "status": "active",
+      "consecutive_absences": 0,
+      "first_seen_at": "2026-08-25 08:24:05",
+      "last_seen_at": "2026-09-14 05:30:06"
+    },
+    "observations": [
+      {
+        "id": 2,
+        "product_id": 2,
+        "content_hash": "b36053852962466c964d27f4d6f4ecc167bcdccf5fa31bd448ff4362dcc74bbb",
+        "fields_json": "{\"is-present\": {\"values\": [\"fm-radio-wired-&-wireless-dual-mode\", \"removable-battery\", \"safety-booklet\", \"micro-usb-charger\", \"quick-start-guide\"], \"category\": \"audio\"}, \"usb-connection\": {\"values\": [\"micro-usb\"], \"category\": \"connectivity\"}, \"resolution\": {\"values\": [\"160x128\"], \"category\": \"display\"}, \"network-band-gsm\": {\"values\": [\"900-1800\"], \"category\": \"networks\"}, \"sim-size\": {\"values\": [\"2ff\"], \"category\": \"networks\"}, \"cpu\": {\"values\": [\"unisoc-6533g\"], \"category\": \"platform\"}, \"battery-type\": {\"values\": [\"removable\"], \"category\": \"battery-&-charging\"}, \"charging\": {\"values\": [\"2-75w\"], \"category\": \"battery-&-charging\"}, \"os\": {\"values\": [\"s30+\"], \"category\": \"operating-system\"}, \"aspect-ratio\": {\"values\": [\"4\"], \"category\": \"display\"}, \"ram\": {\"value\": 8, \"unit\": \"MB\"}, \"internal-storage\": {\"value\": 4, \"unit\": \"MB\"}, \"battery-capacity\": {\"value\": 1000, \"unit\": \"mAh\"}}",
+        "spec_completeness": "complete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-08-25 08:24:05"
+      },
+      {
+        "id": 101,
+        "product_id": 2,
+        "content_hash": "0674e928ef05eb9f4a34be480abdcf8528222dd81a344465a8d276e9c2a19c81",
+        "fields_json": "{}",
+        "spec_completeness": "incomplete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-09-05 08:51:47"
+      }
+    ],
+    "current": {
+      "source_key": "hmd-nokia",
+      "product_key": "hmd-nokia:hmd-101",
+      "manufacturer": "HMD",
+      "model": "HMD 101",
+      "model_number": "AHM1906AARBK1SB",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/hmd-101",
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "fields": {
+        "is-present": {
+          "values": [
+            "fm-radio-wired-&-wireless-dual-mode",
+            "removable-battery",
+            "safety-booklet",
+            "micro-usb-charger",
+            "quick-start-guide"
+          ],
+          "category": "audio"
+        },
+        "usb-connection": {
+          "values": [
+            "micro-usb"
+          ],
+          "category": "connectivity"
+        },
+        "resolution": {
+          "values": [
+            "160x128"
+          ],
+          "category": "display"
+        },
+        "network-band-gsm": {
+          "values": [
+            "900-1800"
+          ],
+          "category": "networks"
+        },
+        "sim-size": {
+          "values": [
+            "2ff"
+          ],
+          "category": "networks"
+        },
+        "cpu": {
+          "values": [
+            "unisoc-6533g"
+          ],
+          "category": "platform"
+        },
+        "battery-type": {
+          "values": [
+            "removable"
+          ],
+          "category": "battery-&-charging"
+        },
+        "charging": {
+          "values": [
+            "2-75w"
+          ],
+          "category": "battery-&-charging"
+        },
+        "os": {
+          "values": [
+            "s30+"
+          ],
+          "category": "operating-system"
+        },
+        "aspect-ratio": {
+          "values": [
+            "4"
+          ],
+          "category": "display"
+        },
+        "ram": {
+          "value": 8,
+          "unit": "MB"
+        },
+        "internal-storage": {
+          "value": 4,
+          "unit": "MB"
+        },
+        "battery-capacity": {
+          "value": 1000,
+          "unit": "mAh"
+        }
+      },
+      "spec_completeness": "complete",
+      "raw": {
+        "specs_url": "https://www.hmd.com/en_int/hmd-101/specs",
+        "source_pages": [
+          "https://www.hmd.com/en_int/hmd-101/specs"
+        ],
+        "skus": [
+          "AHM1906AARBK1SB",
+          "AHM1906BARB1F0B",
+          "AHM1906CARB1C9B"
+        ],
+        "name_source": "catalogue_card",
+        "raw_specs_h1": "HMD 101",
+        "raw_specs_title": "HMD 101 | Music on the go",
+        "raw_base_h1": null,
+        "raw_base_title": null,
+        "catalogue_card_name": "HMD 101",
+        "fetch_note": null
+      },
+      "observed_at": "2026-09-14T06:51:34.824177Z"
+    }
+  },
+  {
+    "product": {
+      "id": 34,
+      "source_id": 1,
+      "product_key": "hmd-nokia:nokia-215-4g-2nd-edition",
+      "manufacturer": "HMD",
+      "model": "Nokia 215 4G 2nd Edition",
+      "model_number": "1GF038BPA2A01",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/nokia-215-4g-2nd-edition",
+      "status": "active",
+      "consecutive_absences": 0,
+      "first_seen_at": "2026-08-25 08:24:05",
+      "last_seen_at": "2026-09-14 05:30:06"
+    },
+    "observations": [
+      {
+        "id": 34,
+        "product_id": 34,
+        "content_hash": "2352406ae9aecc43f98f101d95ac84cf89395628b0c532814549456c42d2afad",
+        "fields_json": "{\"features\": {\"values\": [\"fm-radio-wired-&-wireless-dual-mode\", \"ips\"], \"category\": \"audio\"}, \"bluetooth\": {\"values\": [\"5-0\"], \"category\": \"connectivity\"}, \"front-camera-spec-text\": {\"values\": [\"vga\"], \"category\": \"imaging\"}, \"max-network-speed\": {\"values\": [\"4g\"], \"category\": \"networks\"}, \"network-band-lte\": {\"values\": [\"1-3-5-7-8-20-28-38-39-40-41-full-band\"], \"category\": \"networks\"}, \"network-band-gsm\": {\"values\": [\"3-5-8\"], \"category\": \"networks\"}, \"networks\": {\"values\": [\"2g-3g-4g\"], \"category\": \"networks\"}, \"sim-size\": {\"values\": [\"dual-sim-nanosim\"], \"category\": \"networks\"}, \"is-present\": {\"values\": [\"safety-booklet\", \"charger\", \"quick-start-guide\", \"removable-battery\", \"usb-type-c-cable\"], \"category\": \"in-the-box\"}, \"battery-life\": {\"values\": [\"up-to-10-h-talk-time\"], \"category\": \"battery-&-charging\"}, \"battery-type\": {\"values\": [\"removable\"], \"category\": \"battery-&-charging\"}, \"charging\": {\"values\": [\"usb-type-c\\u2122\"], \"category\": \"battery-&-charging\"}, \"usb-connection\": {\"values\": [\"usb-type-c\\u2122\"], \"category\": \"connectivity\"}, \"resolution\": {\"values\": [\"qvga\"], \"category\": \"display\"}, \"network-band-wcdma\": {\"values\": [\"1-5-8\"], \"category\": \"networks\"}, \"os\": {\"values\": [\"s30+\"], \"category\": \"operating-system\"}, \"ram\": {\"value\": 64, \"unit\": \"MB\"}, \"internal-storage\": {\"value\": 128, \"unit\": \"MB\"}, \"battery-capacity\": {\"value\": 1450, \"unit\": \"mAh\"}}",
+        "spec_completeness": "complete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-08-25 08:24:05"
+      },
+      {
+        "id": 140,
+        "product_id": 34,
+        "content_hash": "a6bbcb4f7df08d81e0ca58752adc8f4039bb7f7dadf4ef8c27794195ce89e62b",
+        "fields_json": "{}",
+        "spec_completeness": "incomplete",
+        "price": null,
+        "currency": null,
+        "availability": null,
+        "observed_at": "2026-09-07 01:26:03"
+      }
+    ],
+    "current": {
+      "source_key": "hmd-nokia",
+      "product_key": "hmd-nokia:nokia-215-4g-2nd-edition",
+      "manufacturer": "HMD",
+      "model": "Nokia 215 4G 2nd Edition",
+      "model_number": "1GF038BPA2A01",
+      "region": "en_int",
+      "url": "https://www.hmd.com/en_int/nokia-215-4g-2nd-edition",
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "fields": {
+        "features": {
+          "values": [
+            "fm-radio-wired-&-wireless-dual-mode",
+            "ips"
+          ],
+          "category": "audio"
+        },
+        "bluetooth": {
+          "values": [
+            "5-0"
+          ],
+          "category": "connectivity"
+        },
+        "front-camera-spec-text": {
+          "values": [
+            "vga"
+          ],
+          "category": "imaging"
+        },
+        "max-network-speed": {
+          "values": [
+            "4g"
+          ],
+          "category": "networks"
+        },
+        "network-band-lte": {
+          "values": [
+            "1-3-5-7-8-20-28-38-39-40-41-full-band"
+          ],
+          "category": "networks"
+        },
+        "network-band-gsm": {
+          "values": [
+            "3-5-8"
+          ],
+          "category": "networks"
+        },
+        "networks": {
+          "values": [
+            "2g-3g-4g"
+          ],
+          "category": "networks"
+        },
+        "sim-size": {
+          "values": [
+            "dual-sim-nanosim"
+          ],
+          "category": "networks"
+        },
+        "is-present": {
+          "values": [
+            "safety-booklet",
+            "charger",
+            "quick-start-guide",
+            "removable-battery",
+            "usb-type-c-cable"
+          ],
+          "category": "in-the-box"
+        },
+        "battery-life": {
+          "values": [
+            "up-to-10-h-talk-time"
+          ],
+          "category": "battery-&-charging"
+        },
+        "battery-type": {
+          "values": [
+            "removable"
+          ],
+          "category": "battery-&-charging"
+        },
+        "charging": {
+          "values": [
+            "usb-type-c™"
+          ],
+          "category": "battery-&-charging"
+        },
+        "usb-connection": {
+          "values": [
+            "usb-type-c™"
+          ],
+          "category": "connectivity"
+        },
+        "resolution": {
+          "values": [
+            "qvga"
+          ],
+          "category": "display"
+        },
+        "network-band-wcdma": {
+          "values": [
+            "1-5-8"
+          ],
+          "category": "networks"
+        },
+        "os": {
+          "values": [
+            "s30+"
+          ],
+          "category": "operating-system"
+        },
+        "ram": {
+          "value": 64,
+          "unit": "MB"
+        },
+        "internal-storage": {
+          "value": 128,
+          "unit": "MB"
+        },
+        "battery-capacity": {
+          "value": 1450,
+          "unit": "mAh"
+        }
+      },
+      "spec_completeness": "complete",
+      "raw": {
+        "specs_url": "https://www.hmd.com/en_int/nokia-215-4g-2nd-edition/specs",
+        "source_pages": [
+          "https://www.hmd.com/en_int/nokia-215-4g-2nd-edition/specs"
+        ],
+        "skus": [
+          "1GF038BPA2A01",
+          "1GF038BPB1A01"
+        ],
+        "name_source": "catalogue_card",
+        "raw_specs_h1": null,
+        "raw_specs_title": "HMD",
+        "raw_base_h1": null,
+        "raw_base_title": null,
+        "catalogue_card_name": "Nokia 215 4G 2nd Edition",
+        "fetch_note": null
+      },
+      "observed_at": "2026-09-14T06:51:49.967471Z"
+    }
+  }
+]
