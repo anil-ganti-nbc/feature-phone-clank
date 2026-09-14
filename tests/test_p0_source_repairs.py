@@ -59,9 +59,10 @@ def test_previously_working_real_lava_native_fields_remain_unchanged(slug):
     captured = json.loads((LAVA / f"{slug}.json").read_text(encoding="utf-8"))
     # Independent reference to the old literal-cell parser, with its first-label rule.
     expected = {}
+    def clean(s):
+        return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip()
     for label, value in re.findall(r"<th>\s*(.*?)\s*</th>\s*<td>\s*(.*?)\s*</td>",
                                    captured["specs_html"], re.S):
-        clean = lambda s: re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip()
         label, value = clean(label), clean(value)
         if label and value:
             key = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
