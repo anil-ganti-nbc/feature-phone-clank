@@ -11,6 +11,9 @@ from feature_phone_clank.providers.sqlite import SqliteStore
 
 
 def test_dashboard_first_render_succeeds_for_fresh_isolated_state(monkeypatch, tmp_path):
+    # This assertion exercises the local/unlabelled build, independently
+    # of a pinned container's inherited runtime-provenance environment.
+    monkeypatch.delenv("FEATURE_PHONE_CLANK_SOURCE_REVISION", raising=False)
     monkeypatch.setenv("FEATURE_PHONE_CLANK_DATA_DIR", str(tmp_path / "field-test"))
     database = resolve_data_path("data/feature_phone_clank.db")
     store = SqliteStore(str(database))
