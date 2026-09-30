@@ -1,0 +1,15 @@
+ARG CANDIDATE_IMAGE
+FROM ${CANDIDATE_IMAGE}
+USER root
+COPY pytest-wheels/ /tmp/observer-pytest-wheels/
+RUN python -m pip install --no-index --find-links=/tmp/observer-pytest-wheels \
+    pytest==8.4.2 iniconfig==2.1.0 packaging==25.0 pluggy==1.6.0 pygments==2.19.2 colorama==0.4.6
+COPY tests/ /qa/tests/
+COPY pyproject.toml /qa/pyproject.toml
+RUN ln -s /app/observer/src /qa/src
+# QA is isolated root solely to test real root ownership/sealing. Runtime
+# producer/consumer remain UID10001; their NAS proof is separate.
+WORKDIR /qa
+HEALTHCHECK NONE
+ENTRYPOINT ["python", "-m", "pytest"]
+CMD ["-q", "tests"]

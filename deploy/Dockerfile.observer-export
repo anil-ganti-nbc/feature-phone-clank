@@ -1,0 +1,22 @@
+# Candidate/export-only extension of the exact deployed dependency image.
+# Never overwrites the deployed tag. No network, package resolution, DB or
+# secret is involved. New package path contains the complete Git src tree.
+FROM sha256:aee27cca626c1b0dfd81c4f9d5be0bfa76f702ea83462ac442f81cd961dd93e3
+ARG EXPORT_SHA
+ARG FINALIZER_SHA256
+LABEL org.opencontainers.image.revision="${EXPORT_SHA}" \
+      clank.observer_export_format="1.0" \
+      clank.observer_publisher_version="1.0" \
+      clank.observer_finalizer_sha256="${FINALIZER_SHA256}" \
+      clank.proof_scope="COPS-000089-export-only"
+ENV PYTHONPATH=/app/observer/src \
+    FEATURE_PHONE_CLANK_SOURCE_REVISION=${EXPORT_SHA} \
+    FEATURE_PHONE_CLANK_CANONICAL_DEPLOYED_REVISION=3e6e19a2d5b7cb5004aab12145d099521a200c25 \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY src/ /app/observer/src/
+COPY config/ /app/config/
+USER 10001:10001
+WORKDIR /app
+HEALTHCHECK NONE
+ENTRYPOINT ["feature-phone-clank"]
+CMD ["observer-snapshot", "--help"]

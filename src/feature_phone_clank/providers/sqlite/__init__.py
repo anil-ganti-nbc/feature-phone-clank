@@ -41,6 +41,57 @@ _SCHEMA = (Path(__file__).parent / "schema.sql").read_text(encoding="utf-8")
 # authority shared by the schema, the migrations, and the compatibility
 # gate); re-exported here under the historical name.
 SCHEMA_VERSION = EXPECTED_SCHEMA_VERSION
+
+
+class BackupIntegrityError(RuntimeError):
+    """A detached backup failed verification (never carries row contents)."""
+
+
+def online_backup_to_partial(
+    source: sqlite3.Connection, partial: Path, *, progress=None,
+    normalize_destination: bool = False, exclusive: bool = False,
+    verification_progress=None,
+) -> None:
+    """Shared SQLite online-backup primitive; never opens or migrates source.
+
+    Recovery and observer export use this same copy/close/integrity boundary.
+    Only the observer opts into exclusive staging and destination-only DELETE
+    journal normalization. Its progress callback imposes a bounded deadline.
+    Naming/publication is the caller's responsibility; this is not raw copying.
+    """
+    if exclusive:
+        # Reserve the private file without following links or clobbering.
+        import os
+        fd = os.open(partial, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(fd)
+    dest = sqlite3.connect(str(partial))
+    if verification_progress is not None:
+        dest.set_progress_handler(verification_progress, 1000)
+    try:
+        with dest:
+            if progress is None:
+                source.backup(dest)
+            else:
+                source.backup(dest, pages=64, progress=progress, sleep=0)
+        if normalize_destination:
+            if dest.execute("PRAGMA journal_mode=DELETE").fetchone()[0] != "delete":
+                raise BackupIntegrityError("destination journal verification failed")
+    finally:
+        dest.close()
+    # Close/reopen: prove the detached file, not the backup connection's view.
+    from urllib.parse import quote
+    uri = "file:" + quote(partial.absolute().as_posix(), safe="/:") + "?mode=ro"
+    # Preserve recovery backup's historical destination environment; a RW
+    # close removes its own empty destination WAL sidecars. The observer's
+    # normalized standalone file is verified using a RO handle instead.
+    check = sqlite3.connect(uri, uri=True) if normalize_destination else sqlite3.connect(str(partial))
+    if verification_progress is not None:
+        check.set_progress_handler(verification_progress, 1000)
+    try:
+        if list(check.execute("PRAGMA integrity_check")) != [("ok",)]:
+            raise BackupIntegrityError("backup integrity verification failed")
+    finally:
+        check.close()
 # Future incremental migrations for databases created at an earlier version.
 # Fresh databases get schema.sql directly and record all versions at once —
 # same idempotent pattern as OEM Radar's sqlite provider.
@@ -321,26 +372,16 @@ class SqliteStore:
         partial = target_path.with_name(target_path.name + ".partial")
         if partial.exists():
             partial.unlink()
-        dest = sqlite3.connect(str(partial))
         try:
-            with dest:
-                self.db.backup(dest)
-        finally:
-            dest.close()
-        # Verify the snapshot before it earns the name: integrity plus identity.
-        check = sqlite3.connect(str(partial))
-        try:
-            result = check.execute("PRAGMA integrity_check").fetchone()[0]
-        finally:
-            check.close()
-        if result != "ok":
+            online_backup_to_partial(self.db, partial)
+        except BackupIntegrityError:
             partial.unlink(missing_ok=True)
-            raise RuntimeError(f"backup failed integrity_check: {result}")
+            raise
         os.replace(partial, target_path)
         data = target_path.read_bytes()
         return {
             "path": str(target_path),
-            "integrity_check": result,
+            "integrity_check": "ok",
             "size_bytes": len(data),
             "sha256": hashlib.sha256(data).hexdigest(),
             "schema_version": self.schema_version(),

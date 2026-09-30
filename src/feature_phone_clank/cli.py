@@ -648,6 +648,14 @@ def main(argv: list[str] | None = None) -> int:
     p_backup.add_argument("--lock-path", default="data/feature-phone-clank.lock")
     p_backup.set_defaults(func=cmd_backup)
 
+    # Dedicated observer interface: never routes through SqliteStore or
+    # recovery backup's migration/continuity/overwrite/lock-bypass options.
+    from .observer_snapshot import command as observer_snapshot_command
+    p_observer = sub.add_parser("observer-snapshot", help="no-migrate child-owned private observer export")
+    p_observer.add_argument("--output", required=True, help="existing empty private attempt directory")
+    p_observer.add_argument("--timeout-seconds", type=float, default=60)
+    p_observer.set_defaults(func=observer_snapshot_command)
+
     p_cont = sub.add_parser("continuity", help="inspect the ADR-0006 continuity registry")
     p_cont.add_argument("--ensure-seed", action="store_true",
                         help="create the registry with operator-verified epoch seed records "
