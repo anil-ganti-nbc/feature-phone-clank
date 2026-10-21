@@ -2,7 +2,7 @@
 # Experimental / actively developing — not approved for production. Only
 # hmd-nokia is in config/scope.yaml's production_collectors as of this build;
 # other collectors, if any, do not persist until explicitly promoted there.
-FROM python:3.12-slim-bookworm@sha256:a116514e19457bcb7af7efe9c3dd0b9b71e85b317694e7882a1c52aa15a78134
+FROM python:3.12-slim-bookworm@sha256:5d9e6adc9abd558bc0ce05f9ab16cef71328916fc9728f6b81e337af86a737e2
 
 # Full Git SHA this image was built from. Must be passed at build time (e.g.
 # `--build-arg GIT_REVISION=$(git rev-parse HEAD)`, or via docker-compose.yml's
